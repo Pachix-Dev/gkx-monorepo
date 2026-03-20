@@ -1,11 +1,6 @@
 export type UserRole =
   | "SUPER_ADMIN"
-  | "TENANT_ADMIN"
-  | "COACH"
-  | "ASSISTANT_COACH"
-  | "GOALKEEPER"
-  | "PARENT"
-  | "READONLY";
+  | "USER";
 
 export type AuthUser = {
   id: string;

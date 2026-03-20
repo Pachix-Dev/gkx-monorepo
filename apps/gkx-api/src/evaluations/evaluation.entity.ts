@@ -7,9 +7,9 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { CoachEntity } from '../coaches/coach.entity';
 import { GoalkeeperEntity } from '../goalkeepers/goalkeeper.entity';
 import { TenantEntity } from '../tenants/tenant.entity';
+import { UserEntity } from '../users/user.entity';
 
 @Entity({ name: 'evaluations' })
 export class EvaluationEntity {
@@ -33,9 +33,9 @@ export class EvaluationEntity {
   @Column({ type: 'uuid' })
   coachId!: string;
 
-  @ManyToOne(() => CoachEntity, { onDelete: 'CASCADE' })
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'coachId' })
-  coach!: CoachEntity;
+  coach!: UserEntity;
 
   @Column({ type: 'date' })
   date!: string;

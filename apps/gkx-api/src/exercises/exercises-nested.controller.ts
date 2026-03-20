@@ -29,11 +29,7 @@ export class ExercisesNestedController {
 
   @Get()
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar ejercicios por contenido de entrenamiento' })
   @ApiUuidParam('id', 'Identificador del contenido de entrenamiento')

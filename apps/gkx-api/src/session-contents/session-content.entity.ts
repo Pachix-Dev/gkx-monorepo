@@ -30,12 +30,15 @@ export class SessionContentEntity {
   @JoinColumn({ name: 'sessionId' })
   session!: TrainingSessionEntity;
 
-  @Column({ type: 'uuid' })
-  trainingContentId!: string;
+  @Column({ type: 'uuid', nullable: true })
+  trainingContentId!: string | null;
 
-  @ManyToOne(() => TrainingContentEntity, { onDelete: 'CASCADE' })
+  @ManyToOne(() => TrainingContentEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'trainingContentId' })
-  trainingContent!: TrainingContentEntity;
+  trainingContent!: TrainingContentEntity | null;
+
+  @Column({ type: 'varchar', length: 150 })
+  taskName!: string;
 
   @Column({ type: 'int', default: 0 })
   order!: number;

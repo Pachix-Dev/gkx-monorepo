@@ -37,7 +37,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Crear usuario' })
   @ApiTypedSuccessResponse({
     message: 'User created successfully',
@@ -54,7 +54,7 @@ export class UsersController {
   }
 
   @Get()
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Listar usuarios' })
   @ApiTypedSuccessResponse({
     message: 'Users retrieved successfully',
@@ -68,7 +68,7 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Obtener usuario por id' })
   @ApiUuidParam('id', 'Identificador del usuario')
   @ApiTypedSuccessResponse({
@@ -85,7 +85,7 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Actualizar usuario' })
   @ApiUuidParam('id', 'Identificador del usuario')
   @ApiTypedSuccessResponse({
@@ -103,7 +103,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Eliminar usuario' })
   @ApiUuidParam('id', 'Identificador del usuario')
   @ApiTypedSuccessResponse({

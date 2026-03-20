@@ -70,6 +70,22 @@ export class ExerciseEntity {
   @Column({ type: 'enum', enum: ExerciseStatus, default: ExerciseStatus.ACTIVE })
   status!: ExerciseStatus;
 
+  // Tactical design fields
+  @Column({ type: 'jsonb', nullable: true })
+  tacticalState!: Record<string, unknown> | null;
+
+  @Column({ type: 'int', nullable: true, default: 1 })
+  tacticalStateVersion!: number | null;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  tacticalPreviewUrl!: string | null;
+
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  tacticalHash!: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  tacticalUpdatedAt!: Date | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 

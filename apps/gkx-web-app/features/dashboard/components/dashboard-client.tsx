@@ -76,7 +76,7 @@ export function DashboardClient() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <KpiCard label="Total goalkeepers" value={kpisQuery.data?.totalGoalkeepers ?? 0} />
-          <KpiCard label="Total coaches" value={kpisQuery.data?.totalCoaches ?? 0} />
+          <KpiCard label="Total responsables" value={kpisQuery.data?.totalCoaches ?? 0} />
           <KpiCard label="Total teams" value={kpisQuery.data?.totalTeams ?? 0} />
           <KpiCard label="Total sessions" value={kpisQuery.data?.totalSessions ?? 0} />
           <KpiCard label="Sessions this week" value={kpisQuery.data?.sessionsThisWeek ?? 0} />

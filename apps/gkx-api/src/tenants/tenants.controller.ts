@@ -48,7 +48,7 @@ export class TenantsController {
   }
 
   @Get()
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar tenants' })
   @ApiTypedSuccessResponse({
     message: 'Tenants retrieved successfully',
@@ -62,7 +62,7 @@ export class TenantsController {
   }
 
   @Get(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Obtener tenant por id' })
   @ApiUuidParam('id', 'Identificador del tenant')
   @ApiTypedSuccessResponse({ message: 'Tenant retrieved successfully', model: PublicTenantModel })
@@ -76,7 +76,7 @@ export class TenantsController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar tenant' })
   @ApiUuidParam('id', 'Identificador del tenant')
   @ApiTypedSuccessResponse({ message: 'Tenant updated successfully', model: PublicTenantModel })

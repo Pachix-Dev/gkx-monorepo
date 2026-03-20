@@ -7,7 +7,6 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { CoachEntity } from '../coaches/coach.entity';
 import { TenantEntity } from '../tenants/tenant.entity';
 import { TeamEntity } from '../teams/team.entity';
 
@@ -26,12 +25,18 @@ export class TrainingSessionEntity {
   @Column({ type: 'uuid' })
   tenantId!: string;
 
+  @Column({ type: 'uuid' })
+  createdByUserId!: string;
+
   @ManyToOne(() => TenantEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tenantId' })
   tenant!: TenantEntity;
 
   @Column({ type: 'varchar', length: 180 })
   title!: string;
+
+  @Column('uuid', { array: true, default: [] })
+  trainingContentIds!: string[];
 
   @Column({ type: 'text', nullable: true })
   description!: string | null;
@@ -44,13 +49,6 @@ export class TrainingSessionEntity {
 
   @Column({ type: 'timestamptz' })
   endTime!: Date;
-
-  @Column({ type: 'uuid', nullable: true })
-  coachId!: string | null;
-
-  @ManyToOne(() => CoachEntity, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'coachId' })
-  coach!: CoachEntity | null;
 
   @Column({ type: 'uuid', nullable: true })
   teamId!: string | null;

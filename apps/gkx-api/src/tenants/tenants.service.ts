@@ -38,7 +38,7 @@ export class TenantsService {
   }
 
   async findAll(actor: AuthenticatedUser) {
-    if (actor.role === Role.TENANT_ADMIN) {
+    if (actor.role === Role.USER) {
       const tenant = await this.tenantsRepository.findOne({
         where: { id: actor.tenantId },
       });
@@ -100,9 +100,9 @@ export class TenantsService {
       return;
     }
 
-    if (actor.role === Role.TENANT_ADMIN && actor.tenantId !== tenantId) {
+    if (actor.role === Role.USER && actor.tenantId !== tenantId) {
       throw new ForbiddenException(
-        'TENANT_ADMIN can only access its own tenant',
+        'USER can only access its own tenant',
       );
     }
   }

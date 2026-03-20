@@ -39,10 +39,6 @@ export default async function TeamsPage() {
       queryFn: () => fetchAuthedArray("/teams", token),
     }),
     queryClient.prefetchQuery({
-      queryKey: queryKeys.coaches,
-      queryFn: () => fetchAuthedArray("/coaches", token),
-    }),
-    queryClient.prefetchQuery({
       queryKey: queryKeys.users,
       queryFn: () => fetchAuthedArray("/users", token),
     }),

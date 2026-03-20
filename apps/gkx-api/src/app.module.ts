@@ -6,8 +6,6 @@ import { AuthSessionEntity } from './auth/entities/auth-session.entity';
 import { EmailActionTokenEntity } from './auth/entities/email-action-token.entity';
 import { AttendanceEntity } from './attendance/attendance.entity';
 import { AttendanceModule } from './attendance/attendance.module';
-import { CoachEntity } from './coaches/coach.entity';
-import { CoachesModule } from './coaches/coaches.module';
 import { EvaluationEntity } from './evaluations/evaluation.entity';
 import { EvaluationsModule } from './evaluations/evaluations.module';
 import { GoalkeeperEntity } from './goalkeepers/goalkeeper.entity';
@@ -50,7 +48,6 @@ import { ConfigModule } from '@nestjs/config';
         AuthSessionEntity,
         EmailActionTokenEntity,
         GoalkeeperEntity,
-        CoachEntity,
         TeamEntity,
         TrainingLineEntity,
         TrainingContentEntity,
@@ -67,7 +64,6 @@ import { ConfigModule } from '@nestjs/config';
     UsersModule,
     TenantsModule,
     GoalkeepersModule,
-    CoachesModule,
     TeamsModule,
     TrainingLinesModule,
     TrainingContentsModule,

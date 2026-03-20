@@ -37,7 +37,7 @@ export class SessionContentsController {
   constructor(private readonly sessionContentsService: SessionContentsService) {}
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Crear relacion session-content' })
   @ApiTypedSuccessResponse({
     message: 'Session content created successfully',
@@ -55,11 +55,7 @@ export class SessionContentsController {
 
   @Get()
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar session-contents' })
   @ApiTypedSuccessResponse({
@@ -75,11 +71,7 @@ export class SessionContentsController {
 
   @Get(':id')
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Obtener session-content por id' })
   @ApiUuidParam('id', 'Identificador de session-content')
@@ -97,7 +89,7 @@ export class SessionContentsController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar session-content' })
   @ApiUuidParam('id', 'Identificador de session-content')
   @ApiTypedSuccessResponse({
@@ -115,7 +107,7 @@ export class SessionContentsController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Eliminar session-content' })
   @ApiUuidParam('id', 'Identificador de session-content')
   @ApiTypedSuccessResponse({

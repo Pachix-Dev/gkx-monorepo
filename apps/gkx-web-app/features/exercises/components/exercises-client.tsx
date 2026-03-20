@@ -352,7 +352,7 @@ export function ExercisesClient() {
               >
                 {isSaving ? "Creando..." : "Crear y diseñar ejercicio →"}
               </button>
-            </div>
+            </div>            
           </form>
         </div>
       ) : null}

@@ -43,7 +43,7 @@ export class TrainingContentsController {
   constructor(private readonly contentsService: TrainingContentsService) {}
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Crear contenido de entrenamiento' })
   @ApiTypedSuccessResponse({
     message: 'Training content created successfully',
@@ -61,11 +61,7 @@ export class TrainingContentsController {
 
   @Get()
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar contenidos de entrenamiento' })
   @ApiQuery({ name: 'trainingLineId', required: false, format: 'uuid' })
@@ -93,11 +89,7 @@ export class TrainingContentsController {
 
   @Get(':id')
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Obtener contenido por id' })
   @ApiUuidParam('id', 'Identificador del contenido')
@@ -115,7 +107,7 @@ export class TrainingContentsController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar contenido de entrenamiento' })
   @ApiUuidParam('id', 'Identificador del contenido')
   @ApiTypedSuccessResponse({
@@ -133,7 +125,7 @@ export class TrainingContentsController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Eliminar contenido de entrenamiento' })
   @ApiUuidParam('id', 'Identificador del contenido')
   @ApiTypedSuccessResponse({

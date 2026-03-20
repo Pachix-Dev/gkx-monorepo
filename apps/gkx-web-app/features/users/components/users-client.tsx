@@ -14,14 +14,7 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { sileo } from "sileo";
 
-const roleOptions: UserRole[] = [  
-  "TENANT_ADMIN",
-  "COACH",
-  "ASSISTANT_COACH",
-  "GOALKEEPER",
-  "PARENT",
-  "READONLY",
-];
+const roleOptions: UserRole[] = ["USER"];
 
 const statusOptions = ["ACTIVE", "INACTIVE"] as const;
 
@@ -29,6 +22,7 @@ type FormMode = "create" | "edit";
 
 export function UsersClient() {
   const { user: authUser } = useAuth();
+  const canCreateUsers = authUser?.role === "SUPER_ADMIN";
   const usersQuery = useUsersQuery();
   const createMutation = useCreateUserMutation();
   const updateMutation = useUpdateUserMutation();
@@ -53,7 +47,7 @@ export function UsersClient() {
       fullName: "",
       email: "",
       password: "",
-      role: "COACH",
+      role: "USER",
       status: "ACTIVE",
     },
   });
@@ -64,7 +58,7 @@ export function UsersClient() {
       tenantId: authUser?.tenantId || "",
       fullName: "",
       email: "",
-      role: "COACH",
+      role: "USER",
       status: "ACTIVE",
     },
   });
@@ -115,7 +109,7 @@ export function UsersClient() {
       fullName: "",
       email: "",
       password: "",
-      role: "COACH",
+      role: "USER",
       status: "ACTIVE",
     });
     setIsFormOpen(true);
@@ -131,7 +125,7 @@ export function UsersClient() {
       tenantId: target.tenantId || authUser?.tenantId || "",
       fullName: target.fullName || "",
       email: target.email || "",
-      role: target.role || "COACH",
+      role: target.role || "USER",
       status: target.status || "ACTIVE",
     });
     setIsFormOpen(true);
@@ -275,13 +269,15 @@ export function UsersClient() {
             </select>
           </label>
 
-          <button
-            type="button"
-            onClick={openCreate}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-secondary hover:text-secondary-foreground"
-          >
-            Nuevo usuario
-          </button>
+          {canCreateUsers ? (
+            <button
+              type="button"
+              onClick={openCreate}
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-secondary hover:text-secondary-foreground"
+            >
+              Nuevo usuario
+            </button>
+          ) : null}
         </div>
       </div>
 

@@ -38,7 +38,7 @@ export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Registrar asistencia individual' })
   @ApiTypedSuccessResponse({
     message: 'Attendance created successfully',
@@ -59,7 +59,7 @@ export class AttendanceController {
   }
 
   @Post('bulk')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Registrar asistencia masiva por sesion' })
   @ApiTypedSuccessResponse({
     message: 'Attendance bulk upsert successful',
@@ -82,11 +82,7 @@ export class AttendanceController {
 
   @Get()
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar asistencias' })
   @ApiTypedSuccessResponse({
@@ -106,11 +102,7 @@ export class AttendanceController {
 
   @Get('session/:sessionId')
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar asistencias por sesion' })
   @ApiUuidParam('sessionId', 'Identificador de la sesion')
@@ -137,11 +129,7 @@ export class AttendanceController {
 
   @Get(':id')
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Obtener asistencia por id' })
   @ApiUuidParam('id', 'Identificador del registro de asistencia')
@@ -163,7 +151,7 @@ export class AttendanceController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar asistencia' })
   @ApiUuidParam('id', 'Identificador del registro de asistencia')
   @ApiTypedSuccessResponse({
@@ -185,7 +173,7 @@ export class AttendanceController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Eliminar asistencia' })
   @ApiUuidParam('id', 'Identificador del registro de asistencia')
   @ApiTypedSuccessResponse({

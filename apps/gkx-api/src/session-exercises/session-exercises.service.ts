@@ -35,7 +35,11 @@ export class SessionExercisesService {
     const tenantId = this.resolveTenantIdForCreate(dto.tenantId, actor);
     await this.ensureTenantExists(tenantId);
 
-    const session = await this.ensureSessionBelongsToTenant(dto.sessionId, tenantId);
+    const session = await this.ensureSessionBelongsToTenant(
+      dto.sessionId,
+      tenantId,
+      actor,
+    );
     const sessionContent = await this.ensureSessionContentBelongsToTenant(
       dto.sessionContentId,
       tenantId,
@@ -48,6 +52,8 @@ export class SessionExercisesService {
       );
     }
 
+    this.assertExerciseAllowedForSession(session, sessionContent, exercise);
+
     const entity = this.sessionExercisesRepository.create({
       tenantId,
       sessionId: session.id,
@@ -59,6 +65,10 @@ export class SessionExercisesService {
       customRepetitions: dto.customRepetitions ?? null,
       customRestSeconds: dto.customRestSeconds ?? null,
       coachNotes: dto.coachNotes ?? null,
+      // Capture tactical design snapshot at assignment time
+      tacticalStateSnapshot: exercise.tacticalState ?? null,
+      tacticalPreviewUrlSnapshot: exercise.tacticalPreviewUrl ?? null,
+      tacticalSnapshotCreatedAt: exercise.tacticalState ? new Date() : null,
     });
 
     return this.sessionExercisesRepository.save(entity);
@@ -81,10 +91,17 @@ export class SessionExercisesService {
       return this.sessionExercisesRepository.find({ order: { createdAt: 'DESC' } });
     }
 
-    return this.sessionExercisesRepository.find({
-      where: { tenantId: actor.tenantId },
-      order: { createdAt: 'DESC' },
-    });
+    return this.sessionExercisesRepository
+      .createQueryBuilder('assignment')
+      .innerJoin(
+        TrainingSessionEntity,
+        'session',
+        'session.id = assignment.sessionId AND session.createdByUserId = :userId',
+        { userId: actor.userId },
+      )
+      .where('assignment.tenantId = :tenantId', { tenantId: actor.tenantId })
+      .orderBy('assignment.createdAt', 'DESC')
+      .getMany();
   }
 
   async findOne(id: string, actor: AuthenticatedUser) {
@@ -93,7 +110,11 @@ export class SessionExercisesService {
       throw new NotFoundException('Session exercise not found');
     }
 
-    this.assertTenantAccess(entity.tenantId, actor);
+    const session = await this.sessionsRepository.findOne({ where: { id: entity.sessionId } });
+    if (!session) {
+      throw new NotFoundException('Training session not found');
+    }
+    this.assertSessionAccess(session, actor);
     return entity;
   }
 
@@ -103,7 +124,7 @@ export class SessionExercisesService {
       throw new NotFoundException('Training session not found');
     }
 
-    this.assertTenantAccess(session.tenantId, actor);
+    this.assertSessionAccess(session, actor);
 
     return this.sessionExercisesRepository.find({
       where: { sessionId, tenantId: session.tenantId },
@@ -122,18 +143,27 @@ export class SessionExercisesService {
     const nextSessionContentId = dto.sessionContentId ?? entity.sessionContentId;
     const nextExerciseId = dto.exerciseId ?? entity.exerciseId;
 
-    await this.ensureSessionBelongsToTenant(nextSessionId, entity.tenantId);
+    const session = await this.ensureSessionBelongsToTenant(
+      nextSessionId,
+      entity.tenantId,
+      actor,
+    );
     const sessionContent = await this.ensureSessionContentBelongsToTenant(
       nextSessionContentId,
       entity.tenantId,
     );
-    await this.ensureExerciseBelongsToTenant(nextExerciseId, entity.tenantId);
+    const exercise = await this.ensureExerciseBelongsToTenant(
+      nextExerciseId,
+      entity.tenantId,
+    );
 
     if (sessionContent.sessionId !== nextSessionId) {
       throw new BadRequestException(
         'sessionContentId does not belong to the provided sessionId',
       );
     }
+
+    this.assertExerciseAllowedForSession(session, sessionContent, exercise);
 
     Object.assign(entity, {
       sessionId: nextSessionId,
@@ -197,11 +227,14 @@ export class SessionExercisesService {
     return actor.tenantId;
   }
 
-  private assertTenantAccess(tenantId: string, actor: AuthenticatedUser) {
+  private assertSessionAccess(
+    session: Pick<TrainingSessionEntity, 'tenantId' | 'createdByUserId'>,
+    actor: AuthenticatedUser,
+  ) {
     if (actor.role === Role.SUPER_ADMIN) return;
-    if (tenantId !== actor.tenantId) {
+    if (session.tenantId !== actor.tenantId || session.createdByUserId !== actor.userId) {
       throw new ForbiddenException(
-        'You can only access records within your own tenant',
+        'You can only access your own training sessions',
       );
     }
   }
@@ -211,7 +244,11 @@ export class SessionExercisesService {
     if (!tenant) throw new NotFoundException('Tenant not found');
   }
 
-  private async ensureSessionBelongsToTenant(sessionId: string, tenantId: string) {
+  private async ensureSessionBelongsToTenant(
+    sessionId: string,
+    tenantId: string,
+    actor: AuthenticatedUser,
+  ) {
     const session = await this.sessionsRepository.findOne({ where: { id: sessionId } });
     if (!session) throw new NotFoundException('Training session not found');
     if (session.tenantId !== tenantId) {
@@ -219,6 +256,7 @@ export class SessionExercisesService {
         'Training session does not belong to the provided tenant',
       );
     }
+    this.assertSessionAccess(session, actor);
     return session;
   }
 
@@ -247,5 +285,32 @@ export class SessionExercisesService {
       );
     }
     return exercise;
+  }
+
+  private assertExerciseAllowedForSession(
+    session: TrainingSessionEntity,
+    sessionContent: SessionContentEntity,
+    exercise: ExerciseEntity,
+  ) {
+    if (!session.trainingContentIds.length) {
+      throw new BadRequestException(
+        'Training session has no assigned training contents',
+      );
+    }
+
+    if (!session.trainingContentIds.includes(exercise.trainingContentId)) {
+      throw new BadRequestException(
+        'Exercise does not belong to the contents assigned to this session',
+      );
+    }
+
+    if (
+      sessionContent.trainingContentId &&
+      sessionContent.trainingContentId !== exercise.trainingContentId
+    ) {
+      throw new BadRequestException(
+        'Exercise must belong to the same training content as the selected task',
+      );
+    }
   }
 }

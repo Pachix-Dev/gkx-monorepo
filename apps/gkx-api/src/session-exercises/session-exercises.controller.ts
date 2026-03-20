@@ -37,7 +37,7 @@ export class SessionExercisesController {
   constructor(private readonly sessionExercisesService: SessionExercisesService) {}
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Crear relacion session-exercise' })
   @ApiTypedSuccessResponse({
     message: 'Session exercise created successfully',
@@ -55,11 +55,7 @@ export class SessionExercisesController {
 
   @Get()
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar session-exercises' })
   @ApiTypedSuccessResponse({
@@ -75,11 +71,7 @@ export class SessionExercisesController {
 
   @Get(':id')
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Obtener session-exercise por id' })
   @ApiUuidParam('id', 'Identificador de session-exercise')
@@ -97,7 +89,7 @@ export class SessionExercisesController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar session-exercise' })
   @ApiUuidParam('id', 'Identificador de session-exercise')
   @ApiTypedSuccessResponse({
@@ -115,7 +107,7 @@ export class SessionExercisesController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Eliminar session-exercise' })
   @ApiUuidParam('id', 'Identificador de session-exercise')
   @ApiTypedSuccessResponse({

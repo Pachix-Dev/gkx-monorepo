@@ -38,7 +38,7 @@ export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Crear equipo' })
   @ApiTypedSuccessResponse({ message: 'Team created successfully', status: 201, model: TeamModel })
   @ApiCommonErrorResponses()
@@ -52,11 +52,7 @@ export class TeamsController {
 
   @Get()
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar equipos' })
   @ApiTypedSuccessResponse({ message: 'Teams retrieved successfully', isArray: true, model: TeamModel })
@@ -68,11 +64,7 @@ export class TeamsController {
 
   @Get(':id')
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Obtener equipo por id' })
   @ApiUuidParam('id', 'Identificador del equipo')
@@ -87,7 +79,7 @@ export class TeamsController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar equipo' })
   @ApiUuidParam('id', 'Identificador del equipo')
   @ApiTypedSuccessResponse({ message: 'Team updated successfully', model: TeamModel })
@@ -102,7 +94,7 @@ export class TeamsController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Eliminar equipo' })
   @ApiUuidParam('id', 'Identificador del equipo')
   @ApiTypedSuccessResponse({ message: 'Team deleted successfully', model: DeleteDataModel })
@@ -116,7 +108,7 @@ export class TeamsController {
   }
 
   @Post(':id/goalkeepers/:goalkeeperId')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Asignar portero a equipo' })
   @ApiUuidParam('id', 'Identificador del equipo')
   @ApiUuidParam('goalkeeperId', 'Identificador del portero')

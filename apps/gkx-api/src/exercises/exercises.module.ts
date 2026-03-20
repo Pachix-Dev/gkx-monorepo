@@ -5,6 +5,7 @@ import { TrainingContentEntity } from '../training-contents/training-content.ent
 import { ExerciseEntity } from './exercise.entity';
 import { ExercisesController } from './exercises.controller';
 import { ExercisesNestedController } from './exercises-nested.controller';
+import { ExercisesTacticalController } from './exercises-tactical.controller';
 import { ExercisesService } from './exercises.service';
 
 @Module({
@@ -15,7 +16,11 @@ import { ExercisesService } from './exercises.service';
       TrainingContentEntity,
     ]),
   ],
-  controllers: [ExercisesController, ExercisesNestedController],
+  controllers: [
+    ExercisesController,
+    ExercisesNestedController,
+    ExercisesTacticalController,
+  ],
   providers: [ExercisesService],
   exports: [ExercisesService, TypeOrmModule],
 })

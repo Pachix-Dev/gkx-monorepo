@@ -29,11 +29,7 @@ export class TrainingContentsNestedController {
 
   @Get()
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar contenidos por linea de entrenamiento' })
   @ApiUuidParam('id', 'Identificador de la linea de entrenamiento')

@@ -1,7 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayNotEmpty,
   IsDateString,
   IsEnum,
+  IsArray,
   IsOptional,
   IsString,
   IsUUID,
@@ -19,6 +21,16 @@ export class CreateTrainingSessionDto {
   @MaxLength(180)
   title!: string;
 
+  @ApiProperty({
+    type: [String],
+    format: 'uuid',
+    description: 'Contenidos de entrenamiento permitidos para esta sesion',
+  })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsUUID('4', { each: true })
+  trainingContentIds!: string[];
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -35,11 +47,6 @@ export class CreateTrainingSessionDto {
   @ApiProperty({ example: '2026-03-12T18:30:00.000Z' })
   @IsDateString()
   endTime!: string;
-
-  @ApiPropertyOptional({ format: 'uuid' })
-  @IsOptional()
-  @IsUUID()
-  coachId?: string;
 
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()

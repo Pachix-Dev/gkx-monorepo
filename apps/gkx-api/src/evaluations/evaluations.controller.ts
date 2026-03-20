@@ -37,7 +37,7 @@ export class EvaluationsController {
   constructor(private readonly evaluationsService: EvaluationsService) {}
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Crear evaluacion tecnica' })
   @ApiTypedSuccessResponse({
     message: 'Evaluation created successfully',
@@ -55,11 +55,7 @@ export class EvaluationsController {
 
   @Get()
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar evaluaciones' })
   @ApiTypedSuccessResponse({
@@ -75,11 +71,7 @@ export class EvaluationsController {
 
   @Get(':id')
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Obtener evaluacion por id' })
   @ApiUuidParam('id', 'Identificador de la evaluacion')
@@ -94,7 +86,7 @@ export class EvaluationsController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar evaluacion tecnica' })
   @ApiUuidParam('id', 'Identificador de la evaluacion')
   @ApiTypedSuccessResponse({ message: 'Evaluation updated successfully', model: EvaluationModel })
@@ -109,7 +101,7 @@ export class EvaluationsController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Eliminar evaluacion tecnica' })
   @ApiUuidParam('id', 'Identificador de la evaluacion')
   @ApiTypedSuccessResponse({ message: 'Evaluation deleted successfully', model: DeleteDataModel })

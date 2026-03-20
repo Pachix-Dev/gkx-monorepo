@@ -6,12 +6,14 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
+import { createHash } from 'crypto';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../auth/roles.enum';
 import { TenantEntity } from '../tenants/tenant.entity';
 import { TrainingContentEntity } from '../training-contents/training-content.entity';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
+import { UpdateTacticalDesignDto } from './dto/update-tactical-design.dto';
 import { ExerciseEntity, ExerciseStatus } from './exercise.entity';
 
 interface ExerciseFilters {
@@ -123,6 +125,53 @@ export class ExercisesService {
     const entity = await this.findOne(id, actor);
     await this.exercisesRepository.remove(entity);
     return { deleted: true };
+  }
+
+  async getTacticalDesign(id: string, actor: AuthenticatedUser) {
+    const entity = await this.findOne(id, actor);
+    return {
+      exerciseId: entity.id,
+      state: entity.tacticalState ?? null,
+      stateVersion: entity.tacticalStateVersion ?? 1,
+      previewUrl: entity.tacticalPreviewUrl ?? null,
+      updatedAt: entity.tacticalUpdatedAt?.toISOString() ?? entity.updatedAt?.toISOString(),
+    };
+  }
+
+  async updateTacticalDesign(
+    id: string,
+    dto: UpdateTacticalDesignDto,
+    actor: AuthenticatedUser,
+  ) {
+    const entity = await this.findOne(id, actor);
+
+    // Use state hash for tactical hash tracking (to detect changes)
+    const stateHash = this.calculateHash(dto.state);
+    const previewHash = dto.previewHash ?? this.calculateHash(dto.previewUrl ?? '');
+
+    Object.assign(entity, {
+      tacticalState: dto.state,
+      tacticalStateVersion: dto.stateVersion ?? (entity.tacticalStateVersion ?? 0) + 1,
+      tacticalPreviewUrl: dto.previewUrl ?? entity.tacticalPreviewUrl,
+      tacticalHash: stateHash || previewHash,
+      tacticalUpdatedAt: new Date(),
+    });
+
+    await this.exercisesRepository.save(entity);
+
+    return {
+      exerciseId: entity.id,
+      state: entity.tacticalState,
+      stateVersion: entity.tacticalStateVersion,
+      previewUrl: entity.tacticalPreviewUrl,
+      updatedAt: entity.tacticalUpdatedAt?.toISOString(),
+    };
+  }
+
+  private calculateHash(data: unknown): string {
+    const hash = createHash('sha256');
+    hash.update(JSON.stringify(data));
+    return hash.digest('hex');
   }
 
   private resolveTenantIdForCreate(

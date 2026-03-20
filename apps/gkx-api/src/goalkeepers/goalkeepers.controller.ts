@@ -41,10 +41,7 @@ export class GoalkeepersController {
 
   @Post()
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Crear perfil de portero' })
   @ApiTypedSuccessResponse({
@@ -63,11 +60,7 @@ export class GoalkeepersController {
 
   @Get()
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar perfiles de portero' })
   @ApiTypedSuccessResponse({
@@ -83,11 +76,7 @@ export class GoalkeepersController {
 
   @Get(':id')
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Obtener perfil de portero por id' })
   @ApiUuidParam('id', 'Identificador del portero')
@@ -106,11 +95,7 @@ export class GoalkeepersController {
 
   @Get(':id/progress')
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Obtener progreso agregado del portero' })
   @ApiUuidParam('id', 'Identificador del portero')
@@ -129,11 +114,7 @@ export class GoalkeepersController {
 
   @Get(':id/evaluations')
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar evaluaciones del portero' })
   @ApiUuidParam('id', 'Identificador del portero')
@@ -153,11 +134,7 @@ export class GoalkeepersController {
 
   @Get(':id/metrics')
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Obtener metricas del portero' })
   @ApiUuidParam('id', 'Identificador del portero')
@@ -176,10 +153,7 @@ export class GoalkeepersController {
 
   @Patch(':id')
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Actualizar perfil de portero' })
   @ApiUuidParam('id', 'Identificador del portero')
@@ -198,7 +172,7 @@ export class GoalkeepersController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Eliminar perfil de portero' })
   @ApiUuidParam('id', 'Identificador del portero')
   @ApiTypedSuccessResponse({

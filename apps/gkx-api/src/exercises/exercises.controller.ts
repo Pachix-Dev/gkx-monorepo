@@ -40,7 +40,7 @@ export class ExercisesController {
   constructor(private readonly exercisesService: ExercisesService) {}
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Crear ejercicio' })
   @ApiTypedSuccessResponse({
     message: 'Exercise created successfully',
@@ -58,11 +58,7 @@ export class ExercisesController {
 
   @Get()
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar ejercicios' })
   @ApiQuery({ name: 'trainingContentId', required: false, format: 'uuid' })
@@ -90,11 +86,7 @@ export class ExercisesController {
 
   @Get(':id')
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Obtener ejercicio por id' })
   @ApiUuidParam('id', 'Identificador del ejercicio')
@@ -109,7 +101,7 @@ export class ExercisesController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar ejercicio' })
   @ApiUuidParam('id', 'Identificador del ejercicio')
   @ApiTypedSuccessResponse({ message: 'Exercise updated successfully', model: ExerciseModel })
@@ -124,7 +116,7 @@ export class ExercisesController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Eliminar ejercicio' })
   @ApiUuidParam('id', 'Identificador del ejercicio')
   @ApiTypedSuccessResponse({ message: 'Exercise deleted successfully', model: DeleteDataModel })

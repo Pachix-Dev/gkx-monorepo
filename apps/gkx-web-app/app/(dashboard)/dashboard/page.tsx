@@ -59,19 +59,30 @@ async function fetchAuthed(path: string, token: string | undefined) {
 }
 
 async function getServerDashboardKpis(token: string | undefined) {
-  const [goalkeepersPayload, coachesPayload, teamsPayload, sessionsPayload, evaluationsPayload] = await Promise.all([
+  const [goalkeepersPayload, teamsPayload, sessionsPayload, evaluationsPayload] = await Promise.all([
     fetchAuthed("/goalkeepers", token),
-    fetchAuthed("/coaches", token),
     fetchAuthed("/teams", token),
     fetchAuthed("/training-sessions", token),
     fetchAuthed("/evaluations", token),
   ]);
 
   const goalkeepers = extractArray<unknown>(goalkeepersPayload);
-  const coaches = extractArray<unknown>(coachesPayload);
   const teams = extractArray<unknown>(teamsPayload);
   const sessions = extractArray<SessionEntity>(sessionsPayload);
   const evaluations = extractArray<EvaluationEntity>(evaluationsPayload);
+  const teamsWithResponsible = teams.filter(
+    (item) =>
+      typeof item === "object" &&
+      item !== null &&
+      "coachId" in item &&
+      Boolean((item as { coachId?: string | null }).coachId),
+  );
+
+  const uniqueResponsibles = new Set(
+    teamsWithResponsible
+      .map((item) => (item as { coachId?: string | null }).coachId)
+      .filter((value): value is string => Boolean(value)),
+  );
 
   const sessionsThisWeek = sessions.filter((session) => {
     return isDateInCurrentWeek(session.date ?? session.createdAt);
@@ -83,7 +94,7 @@ async function getServerDashboardKpis(token: string | undefined) {
 
   return {
     totalGoalkeepers: goalkeepers.length,
-    totalCoaches: coaches.length,
+    totalCoaches: uniqueResponsibles.size,
     totalTeams: teams.length,
     totalSessions: sessions.length,
     sessionsThisWeek,

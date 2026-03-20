@@ -32,16 +32,24 @@ export class SessionContentsService {
     const tenantId = this.resolveTenantIdForCreate(dto.tenantId, actor);
     await this.ensureTenantExists(tenantId);
 
-    const session = await this.ensureSessionBelongsToTenant(dto.sessionId, tenantId);
-    const content = await this.ensureContentBelongsToTenant(
-      dto.trainingContentId,
+    const session = await this.ensureSessionBelongsToTenant(
+      dto.sessionId,
       tenantId,
+      actor,
     );
+    const content = await this.ensureContentBelongsToTenant(dto.trainingContentId, tenantId);
+
+    if (content && !session.trainingContentIds.includes(content.id)) {
+      throw new BadRequestException(
+        'trainingContentId is not assigned to the training session',
+      );
+    }
 
     const entity = this.sessionContentsRepository.create({
       tenantId,
       sessionId: session.id,
-      trainingContentId: content.id,
+      trainingContentId: content?.id ?? null,
+      taskName: dto.taskName,
       order: dto.order ?? 0,
       notes: dto.notes ?? null,
       customDurationMinutes: dto.customDurationMinutes ?? null,
@@ -67,10 +75,17 @@ export class SessionContentsService {
       return this.sessionContentsRepository.find({ order: { createdAt: 'DESC' } });
     }
 
-    return this.sessionContentsRepository.find({
-      where: { tenantId: actor.tenantId },
-      order: { createdAt: 'DESC' },
-    });
+    return this.sessionContentsRepository
+      .createQueryBuilder('task')
+      .innerJoin(
+        TrainingSessionEntity,
+        'session',
+        'session.id = task.sessionId AND session.createdByUserId = :userId',
+        { userId: actor.userId },
+      )
+      .where('task.tenantId = :tenantId', { tenantId: actor.tenantId })
+      .orderBy('task.createdAt', 'DESC')
+      .getMany();
   }
 
   async findOne(id: string, actor: AuthenticatedUser) {
@@ -79,7 +94,11 @@ export class SessionContentsService {
       throw new NotFoundException('Session content not found');
     }
 
-    this.assertTenantAccess(entity.tenantId, actor);
+    const session = await this.sessionsRepository.findOne({ where: { id: entity.sessionId } });
+    if (!session) {
+      throw new NotFoundException('Training session not found');
+    }
+    this.assertSessionAccess(session, actor);
     return entity;
   }
 
@@ -89,7 +108,7 @@ export class SessionContentsService {
       throw new NotFoundException('Training session not found');
     }
 
-    this.assertTenantAccess(session.tenantId, actor);
+    this.assertSessionAccess(session, actor);
 
     return this.sessionContentsRepository.find({
       where: { sessionId, tenantId: session.tenantId },
@@ -104,17 +123,35 @@ export class SessionContentsService {
       throw new BadRequestException('Changing tenantId is not allowed');
     }
 
-    if (dto.sessionId) {
-      await this.ensureSessionBelongsToTenant(dto.sessionId, entity.tenantId);
-    }
+    const nextSessionId = dto.sessionId ?? entity.sessionId;
+    const nextTrainingContentId = dto.trainingContentId ?? entity.trainingContentId;
 
-    if (dto.trainingContentId) {
-      await this.ensureContentBelongsToTenant(dto.trainingContentId, entity.tenantId);
+    const session = await this.ensureSessionBelongsToTenant(
+      nextSessionId,
+      entity.tenantId,
+      actor,
+    );
+
+    if (nextTrainingContentId) {
+      const content = await this.ensureContentBelongsToTenant(
+        nextTrainingContentId,
+        entity.tenantId,
+      );
+
+      if (content && !session.trainingContentIds.includes(content.id)) {
+        throw new BadRequestException(
+          'trainingContentId is not assigned to the training session',
+        );
+      }
     }
 
     Object.assign(entity, {
-      sessionId: dto.sessionId ?? entity.sessionId,
-      trainingContentId: dto.trainingContentId ?? entity.trainingContentId,
+      sessionId: nextSessionId,
+      trainingContentId:
+        dto.trainingContentId === undefined
+          ? entity.trainingContentId
+          : dto.trainingContentId,
+      taskName: dto.taskName ?? entity.taskName,
       order: dto.order ?? entity.order,
       notes: dto.notes ?? entity.notes,
       customDurationMinutes:
@@ -170,11 +207,14 @@ export class SessionContentsService {
     return actor.tenantId;
   }
 
-  private assertTenantAccess(tenantId: string, actor: AuthenticatedUser) {
+  private assertSessionAccess(
+    session: Pick<TrainingSessionEntity, 'tenantId' | 'createdByUserId'>,
+    actor: AuthenticatedUser,
+  ) {
     if (actor.role === Role.SUPER_ADMIN) return;
-    if (tenantId !== actor.tenantId) {
+    if (session.tenantId !== actor.tenantId || session.createdByUserId !== actor.userId) {
       throw new ForbiddenException(
-        'You can only access records within your own tenant',
+        'You can only access your own training sessions',
       );
     }
   }
@@ -184,7 +224,11 @@ export class SessionContentsService {
     if (!tenant) throw new NotFoundException('Tenant not found');
   }
 
-  private async ensureSessionBelongsToTenant(sessionId: string, tenantId: string) {
+  private async ensureSessionBelongsToTenant(
+    sessionId: string,
+    tenantId: string,
+    actor: AuthenticatedUser,
+  ) {
     const session = await this.sessionsRepository.findOne({ where: { id: sessionId } });
     if (!session) throw new NotFoundException('Training session not found');
     if (session.tenantId !== tenantId) {
@@ -192,13 +236,16 @@ export class SessionContentsService {
         'Training session does not belong to the provided tenant',
       );
     }
+    this.assertSessionAccess(session, actor);
     return session;
   }
 
   private async ensureContentBelongsToTenant(
-    contentId: string,
+    contentId: string | undefined,
     tenantId: string,
   ) {
+    if (!contentId) return null;
+
     const content = await this.contentsRepository.findOne({ where: { id: contentId } });
     if (!content) throw new NotFoundException('Training content not found');
     if (content.tenantId !== tenantId) {

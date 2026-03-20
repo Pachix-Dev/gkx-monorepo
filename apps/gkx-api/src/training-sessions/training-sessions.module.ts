@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CoachEntity } from '../coaches/coach.entity';
+import { ExerciseEntity } from '../exercises/exercise.entity';
+import { SessionContentEntity } from '../session-contents/session-content.entity';
+import { SessionExerciseEntity } from '../session-exercises/session-exercise.entity';
 import { TenantEntity } from '../tenants/tenant.entity';
 import { TeamEntity } from '../teams/team.entity';
+import { TrainingContentEntity } from '../training-contents/training-content.entity';
 import { TrainingSessionEntity } from './training-session.entity';
 import { TrainingSessionsController } from './training-sessions.controller';
 import { TrainingSessionsService } from './training-sessions.service';
@@ -12,8 +15,11 @@ import { TrainingSessionsService } from './training-sessions.service';
     TypeOrmModule.forFeature([
       TrainingSessionEntity,
       TenantEntity,
-      CoachEntity,
       TeamEntity,
+      SessionContentEntity,
+      SessionExerciseEntity,
+      ExerciseEntity,
+      TrainingContentEntity,
     ]),
   ],
   controllers: [TrainingSessionsController],

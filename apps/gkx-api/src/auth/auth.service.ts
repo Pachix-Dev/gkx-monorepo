@@ -7,9 +7,8 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes, randomUUID } from 'crypto';
 import { IsNull, Repository } from 'typeorm';
-import { v4 as uuidv4 } from 'uuid';
 import {
   ACCESS_TOKEN_EXPIRES_IN_SECONDS,
   EMAIL_VERIFICATION_TOKEN_EXPIRES_IN_SECONDS,
@@ -24,6 +23,7 @@ import { RequestEmailVerificationDto } from './dto/request-email-verification.dt
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterTenantDto } from './dto/register-tenant.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
@@ -36,6 +36,10 @@ import { MailService } from './mail.service';
 import { Role } from './roles.enum';
 import { TenantEntity, TenantPlan, TenantStatus } from '../tenants/tenant.entity';
 import { UserEntity, UserStatus } from '../users/user.entity';
+import {
+  PublicTenantModel,
+  PublicUserModel,
+} from '../common/swagger/response-models';
 
 interface AuthTokens {
   accessToken: string;
@@ -84,7 +88,7 @@ export class AuthService {
       fullName: dto.fullName,
       email,
       passwordHash: await bcrypt.hash(dto.password, 10),
-      role: Role.TENANT_ADMIN,
+      role: Role.USER,
       status: UserStatus.ACTIVE,
       emailVerifiedAt: null,
     });
@@ -214,13 +218,56 @@ export class AuthService {
     return { revoked: true };
   }
 
-  async me(user: AuthenticatedUser) {
+  async me(
+    user: AuthenticatedUser,
+  ): Promise<{ user: PublicUserModel; tenant: PublicTenantModel | null }> {
     const existingUser = await this.usersRepository.findOne({
       where: { id: user.userId },
     });
     if (!existingUser) {
       throw new UnauthorizedException('User no longer exists');
     }
+
+    const tenant = await this.tenantsRepository.findOne({
+      where: { id: existingUser.tenantId },
+    });
+
+    return {
+      user: this.toPublicUser(existingUser),
+      tenant: tenant ? this.toPublicTenant(tenant) : null,
+    };
+  }
+
+  async updateMyProfile(
+    user: AuthenticatedUser,
+    dto: UpdateMyProfileDto,
+  ): Promise<{ user: PublicUserModel; tenant: PublicTenantModel | null }> {
+    const existingUser = await this.usersRepository.findOne({
+      where: { id: user.userId },
+    });
+
+    if (!existingUser) {
+      throw new UnauthorizedException('User no longer exists');
+    }
+
+    if (dto.email) {
+      const email = dto.email.toLowerCase();
+      const emailInUse = await this.usersRepository.findOne({ where: { email } });
+      if (emailInUse && emailInUse.id !== existingUser.id) {
+        throw new ConflictException('Email already in use');
+      }
+      existingUser.email = email;
+    }
+
+    if (dto.fullName) {
+      existingUser.fullName = dto.fullName;
+    }
+
+    if (dto.password) {
+      existingUser.passwordHash = await bcrypt.hash(dto.password, 10);
+    }
+
+    await this.usersRepository.save(existingUser);
 
     const tenant = await this.tenantsRepository.findOne({
       where: { id: existingUser.tenantId },
@@ -312,7 +359,7 @@ export class AuthService {
   }
 
   private async generateAndStoreTokens(user: UserEntity): Promise<AuthTokens> {
-    const sessionId = uuidv4();
+    const sessionId = randomUUID();
     const payload: Omit<JwtPayload, 'type'> = {
       sub: user.id,
       tenantId: user.tenantId,

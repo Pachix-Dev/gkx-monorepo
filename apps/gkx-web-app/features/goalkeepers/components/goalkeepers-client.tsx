@@ -93,7 +93,7 @@ export function GoalkeepersClient() {
   }, [teams, tenantId]);
 
   const goalkeeperCandidateUsers = useMemo(() => {
-    return tenantScopedUsers.filter((item) => item.role === "GOALKEEPER");
+    return tenantScopedUsers.filter((item) => item.role === "USER");
   }, [tenantScopedUsers]);
 
   const linkedUserIds = useMemo(() => {

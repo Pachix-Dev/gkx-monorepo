@@ -5,7 +5,7 @@ export const createUserSchema = z.object({
   fullName: z.string().min(2, "Nombre minimo de 2 caracteres"),
   email: z.email("Email invalido"),
   password: z.string().min(8, "Password minimo de 8 caracteres"),
-  role: z.enum(["SUPER_ADMIN", "TENANT_ADMIN", "COACH", "ASSISTANT_COACH", "GOALKEEPER", "PARENT", "READONLY"]),
+  role: z.enum(["SUPER_ADMIN", "USER"]),
   status: z.enum(["ACTIVE", "INACTIVE"]),
 });
 

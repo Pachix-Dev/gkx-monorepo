@@ -37,7 +37,7 @@ export class SessionContentsNestedController {
   constructor(private readonly sessionContentsService: SessionContentsService) {}
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Agregar contenido a una sesion' })
   @ApiUuidParam('sessionId', 'Identificador de la sesion')
   @ApiTypedSuccessResponse({
@@ -61,11 +61,7 @@ export class SessionContentsNestedController {
 
   @Get()
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar contenidos de una sesion' })
   @ApiUuidParam('sessionId', 'Identificador de la sesion')
@@ -84,7 +80,7 @@ export class SessionContentsNestedController {
   }
 
   @Patch(':sessionContentId')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar contenido de una sesion' })
   @ApiUuidParam('sessionId', 'Identificador de la sesion')
   @ApiUuidParam('sessionContentId', 'Identificador de session-content')
@@ -109,7 +105,7 @@ export class SessionContentsNestedController {
   }
 
   @Delete(':sessionContentId')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Eliminar contenido de una sesion' })
   @ApiUuidParam('sessionId', 'Identificador de la sesion')
   @ApiUuidParam('sessionContentId', 'Identificador de session-content')

@@ -10,9 +10,14 @@ export class CreateSessionContentDto {
   @IsUUID()
   sessionId!: string;
 
-  @ApiProperty({ format: 'uuid' })
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsOptional()
   @IsUUID()
-  trainingContentId!: string;
+  trainingContentId?: string;
+
+  @ApiProperty({ example: 'Entrenamiento' })
+  @IsString()
+  taskName!: string;
 
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()

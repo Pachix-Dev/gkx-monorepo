@@ -5,12 +5,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { In, Repository } from 'typeorm';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../auth/roles.enum';
-import { CoachEntity } from '../coaches/coach.entity';
+import { ExerciseEntity } from '../exercises/exercise.entity';
+import { SessionContentEntity } from '../session-contents/session-content.entity';
+import { SessionExerciseEntity } from '../session-exercises/session-exercise.entity';
 import { TenantEntity } from '../tenants/tenant.entity';
 import { TeamEntity } from '../teams/team.entity';
+import { TrainingContentEntity } from '../training-contents/training-content.entity';
 import { CreateTrainingSessionDto } from './dto/create-training-session.dto';
 import { UpdateTrainingSessionDto } from './dto/update-training-session.dto';
 import {
@@ -25,18 +29,27 @@ export class TrainingSessionsService {
     private readonly sessionsRepository: Repository<TrainingSessionEntity>,
     @InjectRepository(TenantEntity)
     private readonly tenantsRepository: Repository<TenantEntity>,
-    @InjectRepository(CoachEntity)
-    private readonly coachesRepository: Repository<CoachEntity>,
     @InjectRepository(TeamEntity)
     private readonly teamsRepository: Repository<TeamEntity>,
+    @InjectRepository(SessionContentEntity)
+    private readonly sessionContentsRepository: Repository<SessionContentEntity>,
+    @InjectRepository(SessionExerciseEntity)
+    private readonly sessionExercisesRepository: Repository<SessionExerciseEntity>,
+    @InjectRepository(ExerciseEntity)
+    private readonly exercisesRepository: Repository<ExerciseEntity>,
+    @InjectRepository(TrainingContentEntity)
+    private readonly trainingContentsRepository: Repository<TrainingContentEntity>,
   ) {}
 
   async create(dto: CreateTrainingSessionDto, actor: AuthenticatedUser) {
     const tenantId = this.resolveTenantIdForCreate(dto.tenantId, actor);
 
     await this.ensureTenantExists(tenantId);
-    await this.ensureCoachBelongsToTenant(dto.coachId, tenantId);
     await this.ensureTeamBelongsToTenant(dto.teamId, tenantId);
+    const trainingContentIds = await this.ensureTrainingContentsBelongToTenant(
+      dto.trainingContentIds,
+      tenantId,
+    );
 
     const startTime = new Date(dto.startTime);
     const endTime = new Date(dto.endTime);
@@ -44,12 +57,13 @@ export class TrainingSessionsService {
 
     const entity = this.sessionsRepository.create({
       tenantId,
+      createdByUserId: actor.userId,
       title: dto.title,
+      trainingContentIds,
       description: dto.description ?? null,
       date: dto.date,
       startTime,
       endTime,
-      coachId: dto.coachId ?? null,
       teamId: dto.teamId ?? null,
       location: dto.location ?? null,
       notes: dto.notes ?? null,
@@ -65,7 +79,7 @@ export class TrainingSessionsService {
     }
 
     return this.sessionsRepository.find({
-      where: { tenantId: actor.tenantId },
+      where: { tenantId: actor.tenantId, createdByUserId: actor.userId },
       order: { createdAt: 'DESC' },
     });
   }
@@ -76,7 +90,7 @@ export class TrainingSessionsService {
       throw new NotFoundException('Training session not found');
     }
 
-    this.assertTenantAccess(entity.tenantId, actor);
+    this.assertSessionAccess(entity, actor);
     return entity;
   }
 
@@ -91,13 +105,16 @@ export class TrainingSessionsService {
       throw new BadRequestException('Changing tenantId is not allowed');
     }
 
-    if (dto.coachId) {
-      await this.ensureCoachBelongsToTenant(dto.coachId, entity.tenantId);
-    }
-
     if (dto.teamId) {
       await this.ensureTeamBelongsToTenant(dto.teamId, entity.tenantId);
     }
+
+    const nextTrainingContentIds = dto.trainingContentIds
+      ? await this.ensureTrainingContentsBelongToTenant(
+          dto.trainingContentIds,
+          entity.tenantId,
+        )
+      : entity.trainingContentIds;
 
     const nextStartTime = dto.startTime ? new Date(dto.startTime) : entity.startTime;
     const nextEndTime = dto.endTime ? new Date(dto.endTime) : entity.endTime;
@@ -106,10 +123,10 @@ export class TrainingSessionsService {
     Object.assign(entity, {
       title: dto.title ?? entity.title,
       description: dto.description ?? entity.description,
+      trainingContentIds: nextTrainingContentIds,
       date: dto.date ?? entity.date,
       startTime: nextStartTime,
       endTime: nextEndTime,
-      coachId: dto.coachId ?? entity.coachId,
       teamId: dto.teamId ?? entity.teamId,
       location: dto.location ?? entity.location,
       notes: dto.notes ?? entity.notes,
@@ -125,6 +142,143 @@ export class TrainingSessionsService {
     return { deleted: true };
   }
 
+  async buildFieldSheetPdf(sessionId: string, actor: AuthenticatedUser) {
+    const session = await this.findOne(sessionId, actor);
+
+    const tasks = await this.sessionContentsRepository.find({
+      where: { sessionId: session.id, tenantId: session.tenantId },
+      order: { order: 'ASC', createdAt: 'ASC' },
+    });
+
+    const exercisesByTask = await Promise.all(
+      tasks.map(async (task) => {
+        const rows = await this.sessionExercisesRepository.find({
+          where: {
+            sessionId: session.id,
+            sessionContentId: task.id,
+            tenantId: session.tenantId,
+            selected: true,
+          },
+          order: { order: 'ASC', createdAt: 'ASC' },
+        });
+
+        const exerciseIds = rows.map((row) => row.exerciseId);
+        const exercises = exerciseIds.length
+          ? await this.exercisesRepository.findBy({ id: In(exerciseIds) })
+          : [];
+        const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]));
+
+        return {
+          task,
+          exercises: rows.map((row) => ({
+            assignment: row,
+            exercise: byId.get(row.exerciseId) ?? null,
+          })),
+        };
+      }),
+    );
+
+    const contentIds = tasks
+      .map((task) => task.trainingContentId)
+      .filter((id): id is string => Boolean(id));
+    const trainingContents = contentIds.length
+      ? await this.trainingContentsRepository.findBy({ id: In(contentIds) })
+      : [];
+    const contentById = new Map(trainingContents.map((content) => [content.id, content]));
+
+    const pdf = await PDFDocument.create();
+    let page = pdf.addPage([595, 842]);
+    const titleFont = await pdf.embedFont(StandardFonts.HelveticaBold);
+    const bodyFont = await pdf.embedFont(StandardFonts.Helvetica);
+
+    let y = 800;
+    const ensureSpace = () => {
+      if (y >= 120) return;
+      page = pdf.addPage([595, 842]);
+      y = 800;
+    };
+
+    page.drawText(`Hoja de campo: ${session.title}`, {
+      x: 40,
+      y,
+      size: 18,
+      font: titleFont,
+      color: rgb(0.1, 0.1, 0.1),
+    });
+    y -= 24;
+    page.drawText(`Fecha: ${session.date} | Horario: ${session.startTime.toISOString()} - ${session.endTime.toISOString()}`, {
+      x: 40,
+      y,
+      size: 10,
+      font: bodyFont,
+      color: rgb(0.2, 0.2, 0.2),
+    });
+    y -= 14;
+    page.drawText(`Ubicacion: ${session.location ?? 'No definida'} | Estado: ${session.status}`, {
+      x: 40,
+      y,
+      size: 10,
+      font: bodyFont,
+      color: rgb(0.2, 0.2, 0.2),
+    });
+    y -= 20;
+
+    for (const taskGroup of exercisesByTask) {
+      ensureSpace();
+
+      const contentName = taskGroup.task.trainingContentId
+        ? (contentById.get(taskGroup.task.trainingContentId)?.name ?? 'Contenido no encontrado')
+        : 'Sin contenido asociado';
+
+      page.drawText(`Tarea: ${taskGroup.task.taskName}`, {
+        x: 40,
+        y,
+        size: 12,
+        font: titleFont,
+      });
+      y -= 14;
+      page.drawText(`Contenido: ${contentName} | Duracion: ${taskGroup.task.customDurationMinutes ?? '-'} min`, {
+        x: 48,
+        y,
+        size: 9,
+        font: bodyFont,
+      });
+      y -= 12;
+
+      if (taskGroup.task.notes) {
+        page.drawText(`Notas: ${taskGroup.task.notes}`, {
+          x: 48,
+          y,
+          size: 9,
+          font: bodyFont,
+        });
+        y -= 12;
+      }
+
+      for (const row of taskGroup.exercises) {
+        const exerciseName = row.exercise?.name ?? 'Ejercicio no encontrado';
+        const preview = row.assignment.tacticalPreviewUrlSnapshot ?? 'sin preview';
+        page.drawText(
+          `- ${exerciseName} | rep: ${row.assignment.customRepetitions ?? row.exercise?.repetitions ?? '-'} | dur: ${row.assignment.customDurationMinutes ?? row.exercise?.durationMinutes ?? '-'} min | preview: ${preview}`,
+          {
+            x: 56,
+            y,
+            size: 8,
+            font: bodyFont,
+          },
+        );
+        y -= 10;
+        ensureSpace();
+      }
+
+      y -= 8;
+    }
+
+    const bytes = await pdf.save();
+    const filename = `field-sheet-${session.date}-${session.id}.pdf`;
+    return { bytes: Buffer.from(bytes), filename };
+  }
+
   private resolveTenantIdForCreate(
     requestedTenantId: string,
     actor: AuthenticatedUser,
@@ -138,11 +292,14 @@ export class TrainingSessionsService {
     return actor.tenantId;
   }
 
-  private assertTenantAccess(tenantId: string, actor: AuthenticatedUser) {
+  private assertSessionAccess(
+    session: Pick<TrainingSessionEntity, 'tenantId' | 'createdByUserId'>,
+    actor: AuthenticatedUser,
+  ) {
     if (actor.role === Role.SUPER_ADMIN) return;
-    if (tenantId !== actor.tenantId) {
+    if (session.tenantId !== actor.tenantId || session.createdByUserId !== actor.userId) {
       throw new ForbiddenException(
-        'You can only access records within your own tenant',
+        'You can only access your own training sessions',
       );
     }
   }
@@ -160,22 +317,6 @@ export class TrainingSessionsService {
     }
   }
 
-  private async ensureCoachBelongsToTenant(
-    coachId: string | undefined,
-    tenantId: string,
-  ) {
-    if (!coachId) return;
-
-    const coach = await this.coachesRepository.findOne({ where: { id: coachId } });
-    if (!coach) {
-      throw new NotFoundException('Coach profile not found');
-    }
-
-    if (coach.tenantId !== tenantId) {
-      throw new BadRequestException('Coach does not belong to the provided tenant');
-    }
-  }
-
   private async ensureTeamBelongsToTenant(teamId: string | undefined, tenantId: string) {
     if (!teamId) return;
 
@@ -187,5 +328,36 @@ export class TrainingSessionsService {
     if (team.tenantId !== tenantId) {
       throw new BadRequestException('Team does not belong to the provided tenant');
     }
+  }
+
+  private async ensureTrainingContentsBelongToTenant(
+    contentIds: string[],
+    tenantId: string,
+  ) {
+    const uniqueIds = [...new Set(contentIds)];
+
+    if (uniqueIds.length === 0) {
+      throw new BadRequestException(
+        'trainingContentIds must contain at least one item',
+      );
+    }
+
+    const contents = await this.trainingContentsRepository.findBy({
+      id: In(uniqueIds),
+    });
+
+    if (contents.length !== uniqueIds.length) {
+      throw new NotFoundException('One or more training contents were not found');
+    }
+
+    for (const content of contents) {
+      if (content.tenantId !== tenantId) {
+        throw new BadRequestException(
+          'Training content does not belong to the provided tenant',
+        );
+      }
+    }
+
+    return uniqueIds;
   }
 }

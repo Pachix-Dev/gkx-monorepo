@@ -37,7 +37,7 @@ export class TrainingLinesController {
   constructor(private readonly trainingLinesService: TrainingLinesService) {}
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Crear linea de entrenamiento' })
   @ApiTypedSuccessResponse({
     message: 'Training line created successfully',
@@ -55,11 +55,7 @@ export class TrainingLinesController {
 
   @Get()
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar lineas de entrenamiento' })
   @ApiTypedSuccessResponse({
@@ -75,11 +71,7 @@ export class TrainingLinesController {
 
   @Get(':id')
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Obtener linea de entrenamiento por id' })
   @ApiUuidParam('id', 'Identificador de la linea de entrenamiento')
@@ -97,7 +89,7 @@ export class TrainingLinesController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar linea de entrenamiento' })
   @ApiUuidParam('id', 'Identificador de la linea de entrenamiento')
   @ApiTypedSuccessResponse({
@@ -115,7 +107,7 @@ export class TrainingLinesController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Eliminar linea de entrenamiento' })
   @ApiUuidParam('id', 'Identificador de la linea de entrenamiento')
   @ApiTypedSuccessResponse({

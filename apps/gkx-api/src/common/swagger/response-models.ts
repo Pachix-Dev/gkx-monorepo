@@ -354,8 +354,14 @@ export class TrainingSessionModel {
   @ApiProperty({ format: 'uuid' })
   tenantId!: string;
 
+  @ApiProperty({ format: 'uuid' })
+  createdByUserId!: string;
+
   @ApiProperty()
   title!: string;
+
+  @ApiProperty({ type: [String], format: 'uuid' })
+  trainingContentIds!: string[];
 
   @ApiProperty({ nullable: true })
   description!: string | null;
@@ -368,9 +374,6 @@ export class TrainingSessionModel {
 
   @ApiProperty({ format: 'date-time' })
   endTime!: Date;
-
-  @ApiProperty({ format: 'uuid', nullable: true })
-  coachId!: string | null;
 
   @ApiProperty({ format: 'uuid', nullable: true })
   teamId!: string | null;
@@ -401,8 +404,11 @@ export class SessionContentModel {
   @ApiProperty({ format: 'uuid' })
   sessionId!: string;
 
-  @ApiProperty({ format: 'uuid' })
-  trainingContentId!: string;
+  @ApiProperty({ format: 'uuid', nullable: true })
+  trainingContentId!: string | null;
+
+  @ApiProperty()
+  taskName!: string;
 
   @ApiProperty()
   order!: number;

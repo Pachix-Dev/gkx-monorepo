@@ -7,8 +7,8 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { CoachEntity } from '../coaches/coach.entity';
 import { TenantEntity } from '../tenants/tenant.entity';
+import { UserEntity } from '../users/user.entity';
 
 @Entity({ name: 'teams' })
 export class TeamEntity {
@@ -34,9 +34,9 @@ export class TeamEntity {
   @Column({ type: 'uuid', nullable: true })
   coachId!: string | null;
 
-  @ManyToOne(() => CoachEntity, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'coachId' })
-  coach!: CoachEntity | null;
+  coach!: UserEntity | null;
 
   @CreateDateColumn()
   createdAt!: Date;

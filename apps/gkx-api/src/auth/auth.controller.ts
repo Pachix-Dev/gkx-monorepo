@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   ApiCommonErrorResponses,
@@ -20,6 +20,7 @@ import { RequestEmailVerificationDto } from './dto/request-email-verification.dt
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterTenantDto } from './dto/register-tenant.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { AuthenticatedUser } from './interfaces/authenticated-user.interface';
@@ -33,7 +34,7 @@ export class AuthController {
   @Post('register-tenant')
   @ApiOperation({
     summary: 'Registrar tenant y usuario administrador',
-    description: 'Crea un tenant nuevo y su TENANT_ADMIN inicial.',
+    description: 'Crea un tenant nuevo y su usuario inicial con rol USER.',
   })
   @ApiTypedSuccessResponse({
     message: 'Tenant registered successfully',
@@ -87,7 +88,10 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'Iniciar sesion' })
-  @ApiTypedSuccessResponse({ message: 'Login successful', model: AuthLoginDataModel })
+  @ApiTypedSuccessResponse({
+    message: 'Login successful',
+    model: AuthLoginDataModel,
+  })
   @ApiCommonErrorResponses()
   async login(@Body() dto: LoginDto) {
     const data = await this.authService.login(dto);
@@ -154,7 +158,10 @@ export class AuthController {
   @Post('logout')
   @ApiBearerAuth('jwt-auth')
   @ApiOperation({ summary: 'Cerrar sesion del usuario actual' })
-  @ApiTypedSuccessResponse({ message: 'Logout successful', model: LogoutDataModel })
+  @ApiTypedSuccessResponse({
+    message: 'Logout successful',
+    model: LogoutDataModel,
+  })
   @ApiCommonErrorResponses()
   async logout(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.authService.logout(user);
@@ -181,6 +188,32 @@ export class AuthController {
     return {
       success: true,
       message: 'Current user retrieved successfully',
+      data,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  @ApiBearerAuth('jwt-auth')
+  @ApiOperation({ summary: 'Actualizar perfil del usuario autenticado' })
+  @ApiTypedSuccessResponse({
+    message: 'Current user profile updated successfully',
+    model: AuthMeDataModel,
+  })
+  @ApiCommonErrorResponses()
+  async updateMe(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateMyProfileDto,
+  ) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const data: Awaited<ReturnType<AuthService['updateMyProfile']>> =
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      await this.authService.updateMyProfile(user, dto);
+
+    return {
+      success: true,
+      message: 'Current user profile updated successfully',
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       data,
     };
   }

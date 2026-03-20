@@ -1,11 +1,56 @@
-import { ModulePlaceholder } from "@/components/dashboard/module-placeholder";
+import { TrainingSessionsClient } from "@/features/training-sessions/components/training-sessions-client";
+import { extractArray } from "@/lib/api/response";
+import { queryKeys } from "@/lib/query/keys";
+import { createQueryClient } from "@/lib/query/query-client";
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { cookies } from "next/headers";
 
-export default function TrainingSessionsPage() {
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+async function fetchAuthedArray(path: string, token: string | undefined) {
+  if (!API_BASE_URL || !token) {
+    return [];
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api${path}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const payload = await response.json();
+  return extractArray(payload);
+}
+
+export default async function TrainingSessionsPage() {
+  const queryClient = createQueryClient();
+  const token = (await cookies()).get("gkx_access_token")?.value;
+
+  await Promise.all([
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.trainingSessions,
+      queryFn: () => fetchAuthedArray("/training-sessions", token),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.trainingContents({}),
+      queryFn: () => fetchAuthedArray("/training-contents", token),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.exercises({}),
+      queryFn: () => fetchAuthedArray("/exercises", token),
+    }),
+  ]);
+
   return (
-    <ModulePlaceholder
-      title="Training Sessions"
-      description="Base del modulo lista. Siguiente paso: session builder con contenidos y ejercicios."
-      endpoint="/api/training-sessions"
-    />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <TrainingSessionsClient />
+    </HydrationBoundary>
   );
 }

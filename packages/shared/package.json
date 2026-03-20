@@ -1,0 +1,21 @@
+{
+    "name": "shared",
+    "version": "1.0.0",
+    "description": "Shared types, DTOs, and schemas for GKX monorepo",
+    "private": true,
+    "main": "src/index.ts",
+    "types": "src/index.ts",
+    "scripts": {
+        "lint": "eslint src",
+        "type-check": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@nestjs/mapped-types": "^2.1.0",
+        "@nestjs/swagger": "^11.2.6",
+        "class-validator": "^0.14.1",
+        "zod": "^4.3.6"
+    },
+    "devDependencies": {
+        "typescript": "^5.7.3"
+    }
+}

@@ -25,6 +25,10 @@ export class UsersService {
   ) {}
 
   async create(dto: CreateUserDto, actor: AuthenticatedUser) {
+    if (actor.role !== Role.SUPER_ADMIN) {
+      throw new ForbiddenException('Only SUPER_ADMIN can create users');
+    }
+
     this.assertRoleIsNotSuperAdmin(dto.role);
 
     const tenantId = this.resolveTenantIdForCreate(dto.tenantId, actor);
@@ -42,7 +46,7 @@ export class UsersService {
       fullName: dto.fullName,
       email,
       passwordHash: await bcrypt.hash(dto.password, 10),
-      role: dto.role ?? Role.COACH,
+      role: dto.role ?? Role.USER,
       status: dto.status ?? UserStatus.ACTIVE,
     });
 
@@ -50,7 +54,7 @@ export class UsersService {
   }
 
   async findAll(actor: AuthenticatedUser) {
-    if (actor.role === Role.TENANT_ADMIN) {
+    if (actor.role === Role.USER) {
       return this.usersRepository.find({
         where: {
           tenantId: actor.tenantId,
@@ -99,9 +103,9 @@ export class UsersService {
     this.assertRoleIsNotSuperAdmin(dto.role);
 
     if (dto.tenantId) {
-      if (actor.role === Role.TENANT_ADMIN && dto.tenantId !== actor.tenantId) {
+      if (actor.role === Role.USER && dto.tenantId !== actor.tenantId) {
         throw new ForbiddenException(
-          'TENANT_ADMIN can only manage users within the same tenant',
+          'USER can only manage users within the same tenant',
         );
       }
       await this.ensureTenantExists(dto.tenantId);
@@ -165,13 +169,13 @@ export class UsersService {
     requestedTenantId: string,
     actor: AuthenticatedUser,
   ): string {
-    if (actor.role !== Role.TENANT_ADMIN) {
+    if (actor.role !== Role.USER) {
       return requestedTenantId;
     }
 
     if (requestedTenantId !== actor.tenantId) {
       throw new ForbiddenException(
-        'TENANT_ADMIN can only create users in the same tenant',
+        'USER can only create users in the same tenant',
       );
     }
 
@@ -183,9 +187,9 @@ export class UsersService {
       return;
     }
 
-    if (actor.role === Role.TENANT_ADMIN && user.tenantId !== actor.tenantId) {
+    if (actor.role === Role.USER && user.tenantId !== actor.tenantId) {
       throw new ForbiddenException(
-        'TENANT_ADMIN can only manage users within the same tenant',
+        'USER can only manage users within the same tenant',
       );
     }
   }

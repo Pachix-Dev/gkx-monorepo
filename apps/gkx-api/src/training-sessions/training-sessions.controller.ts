@@ -3,10 +3,12 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
+  StreamableFile,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -37,7 +39,7 @@ export class TrainingSessionsController {
   constructor(private readonly sessionsService: TrainingSessionsService) {}
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Crear sesion de entrenamiento' })
   @ApiTypedSuccessResponse({
     message: 'Training session created successfully',
@@ -55,11 +57,7 @@ export class TrainingSessionsController {
 
   @Get()
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar sesiones de entrenamiento' })
   @ApiTypedSuccessResponse({
@@ -75,11 +73,7 @@ export class TrainingSessionsController {
 
   @Get(':id')
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Obtener sesion por id' })
   @ApiUuidParam('id', 'Identificador de la sesion')
@@ -96,8 +90,26 @@ export class TrainingSessionsController {
     return { success: true, message: 'Training session retrieved successfully', data };
   }
 
+  @Get(':id/field-sheet.pdf')
+  @Roles(Role.SUPER_ADMIN, Role.USER)
+  @ApiOperation({ summary: 'Descargar hoja de campo en PDF' })
+  @ApiUuidParam('id', 'Identificador de la sesion')
+  @ApiCommonErrorResponses()
+  @Header('Content-Type', 'application/pdf')
+  async downloadFieldSheetPdf(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const file = await this.sessionsService.buildFieldSheetPdf(id, user);
+    return new StreamableFile(file.bytes, {
+      disposition: `attachment; filename="${file.filename}"`,
+      type: 'application/pdf',
+      length: file.bytes.length,
+    });
+  }
+
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar sesion de entrenamiento' })
   @ApiUuidParam('id', 'Identificador de la sesion')
   @ApiTypedSuccessResponse({
@@ -115,7 +127,7 @@ export class TrainingSessionsController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Eliminar sesion de entrenamiento' })
   @ApiUuidParam('id', 'Identificador de la sesion')
   @ApiTypedSuccessResponse({

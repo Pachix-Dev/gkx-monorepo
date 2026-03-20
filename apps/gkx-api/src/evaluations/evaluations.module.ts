@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CoachEntity } from '../coaches/coach.entity';
 import { GoalkeeperEntity } from '../goalkeepers/goalkeeper.entity';
 import { TenantEntity } from '../tenants/tenant.entity';
+import { UserEntity } from '../users/user.entity';
 import { EvaluationEntity } from './evaluation.entity';
 import { EvaluationsController } from './evaluations.controller';
 import { EvaluationsService } from './evaluations.service';
@@ -13,7 +13,7 @@ import { EvaluationsService } from './evaluations.service';
       EvaluationEntity,
       TenantEntity,
       GoalkeeperEntity,
-      CoachEntity,
+      UserEntity,
     ]),
   ],
   controllers: [EvaluationsController],

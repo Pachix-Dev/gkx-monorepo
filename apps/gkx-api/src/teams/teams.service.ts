@@ -8,9 +8,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../auth/roles.enum';
-import { CoachEntity } from '../coaches/coach.entity';
 import { GoalkeeperEntity } from '../goalkeepers/goalkeeper.entity';
 import { TenantEntity } from '../tenants/tenant.entity';
+import { UserEntity } from '../users/user.entity';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 import { TeamEntity } from './team.entity';
@@ -22,8 +22,8 @@ export class TeamsService {
     private readonly teamsRepository: Repository<TeamEntity>,
     @InjectRepository(TenantEntity)
     private readonly tenantsRepository: Repository<TenantEntity>,
-    @InjectRepository(CoachEntity)
-    private readonly coachesRepository: Repository<CoachEntity>,
+    @InjectRepository(UserEntity)
+    private readonly usersRepository: Repository<UserEntity>,
     @InjectRepository(GoalkeeperEntity)
     private readonly goalkeepersRepository: Repository<GoalkeeperEntity>,
   ) {}
@@ -32,7 +32,7 @@ export class TeamsService {
     const tenantId = this.resolveTenantIdForCreate(dto.tenantId, actor);
 
     await this.ensureTenantExists(tenantId);
-    await this.ensureCoachBelongsToTenant(dto.coachId, tenantId);
+    await this.ensureResponsibleBelongsToTenant(dto.coachId, tenantId);
 
     const entity = this.teamsRepository.create({
       tenantId,
@@ -73,7 +73,7 @@ export class TeamsService {
       throw new BadRequestException('Changing tenantId is not allowed');
     }
 
-    await this.ensureCoachBelongsToTenant(dto.coachId, entity.tenantId);
+    await this.ensureResponsibleBelongsToTenant(dto.coachId, entity.tenantId);
 
     Object.assign(entity, {
       name: dto.name ?? entity.name,
@@ -152,21 +152,21 @@ export class TeamsService {
     }
   }
 
-  private async ensureCoachBelongsToTenant(
-    coachId: string | undefined,
+  private async ensureResponsibleBelongsToTenant(
+    responsibleUserId: string | undefined,
     tenantId: string,
   ) {
-    if (!coachId) {
+    if (!responsibleUserId) {
       return;
     }
 
-    const coach = await this.coachesRepository.findOne({ where: { id: coachId } });
-    if (!coach) {
-      throw new NotFoundException('Coach profile not found');
+    const responsibleUser = await this.usersRepository.findOne({ where: { id: responsibleUserId } });
+    if (!responsibleUser) {
+      throw new NotFoundException('Responsible user not found');
     }
 
-    if (coach.tenantId !== tenantId) {
-      throw new BadRequestException('Coach does not belong to the provided tenant');
+    if (responsibleUser.tenantId !== tenantId) {
+      throw new BadRequestException('Responsible user does not belong to the provided tenant');
     }
   }
 }

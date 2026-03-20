@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import type Konva from "konva";
-import { useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Arrow, Circle, Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 import type {
   ArrowHeadType,
@@ -23,6 +23,8 @@ import {
 } from "./geometry";
 import { SelectedElementPanel } from "./selected-element-panel";
 import { buildEditorStore, TacticalEditorStoreContext, useTacticalEditorStore } from "./tactical-editor-store";
+import { useTacticalDesignSync } from "../../exercises/hooks/use-tactical-design-sync";
+import { Fragment } from "react";
 
 const FIXED_STAGE_WIDTH = 1300;
 const FIXED_STAGE_HEIGHT = 659;
@@ -173,6 +175,32 @@ function TacticalEditorClientContent({ backgrounds, shapeGroups, exerciseId }: T
   const [stageScale, setStageScale] = useState(1);
 
   const deferredAssetSearch = useDeferredValue(assetSearch.trim().toLowerCase());
+
+  // Tactical design sync with API
+  const getCurrentState = useCallback(() => ({
+    elements,
+    backgroundSrc,
+  }), [elements, backgroundSrc]);
+
+  const { remoteDesign, isLoadingRemote, isSaving, debouncedSave } =
+    useTacticalDesignSync(exerciseId, getCurrentState);
+
+  // Load remote state on mount
+  const hasLoadedRemoteRef = useRef(false);
+  useEffect(() => {
+    if (remoteDesign?.state && !hasLoadedRemoteRef.current && exerciseId) {
+      hasLoadedRemoteRef.current = true;
+      setBackgroundSrc(remoteDesign.state.backgroundSrc || "");
+      setElements((Array.isArray(remoteDesign.state.elements) ? remoteDesign.state.elements : []) as EditorElement[]);
+    }
+  }, [remoteDesign, exerciseId, setBackgroundSrc, setElements]);
+
+  // Debounced save on state changes
+  useEffect(() => {
+    if (exerciseId && (elements.length > 0 || backgroundSrc)) {
+      debouncedSave();
+    }
+  }, [exerciseId, elements, backgroundSrc, debouncedSave]);
 
   useEffect(() => {
     if (backgroundSrc || !backgrounds[0]?.src) {
@@ -688,7 +716,7 @@ function TacticalEditorClientContent({ backgrounds, shapeGroups, exerciseId }: T
       const hasEndTriangle = element.endHead === "triangle";
 
       return (
-        <>
+        <Fragment key={element.id}>
           <Arrow
             key={element.id}
             ref={(node) => {
@@ -795,7 +823,7 @@ function TacticalEditorClientContent({ backgrounds, shapeGroups, exerciseId }: T
               />
             </>
           ) : null}
-        </>
+        </Fragment>
       );
     }
 
@@ -1452,12 +1480,9 @@ function TacticalEditorClientContent({ backgrounds, shapeGroups, exerciseId }: T
               >
                 Exportar PNG
               </button>
-            </div>
+            </div>            
           </div>
-
           <div ref={containerRef} className="relative w-full">           
-            <SelectedElementPanel selectedElement={selectedElement} fontOptions={FONT_OPTIONS} onDelete={deleteSelected} onBringToFront={bringElementToFront} onSendToBack={sendElementToBack} onToggleVisibility={toggleElementVisibility} onToggleLock={toggleElementLock} onUpdateElement={updateElement} />
-
             <div className="flex w-full justify-center overflow-hidden">
               <Stage
                 ref={(node) => {
@@ -1507,6 +1532,7 @@ function TacticalEditorClientContent({ backgrounds, shapeGroups, exerciseId }: T
               </Stage>
             </div>
           </div>
+          <SelectedElementPanel selectedElement={selectedElement} fontOptions={FONT_OPTIONS} onDelete={deleteSelected} onBringToFront={bringElementToFront} onSendToBack={sendElementToBack} onToggleVisibility={toggleElementVisibility} onToggleLock={toggleElementLock} onUpdateElement={updateElement} />
         </div>
       </div>
     </section>

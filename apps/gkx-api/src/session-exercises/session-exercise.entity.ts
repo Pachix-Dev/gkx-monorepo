@@ -63,6 +63,16 @@ export class SessionExerciseEntity {
   @Column({ type: 'text', nullable: true })
   coachNotes!: string | null;
 
+  // Tactical design snapshot (frozen at assignment time for field sheets)
+  @Column({ type: 'jsonb', nullable: true })
+  tacticalStateSnapshot!: Record<string, unknown> | null;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  tacticalPreviewUrlSnapshot!: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  tacticalSnapshotCreatedAt!: Date | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 

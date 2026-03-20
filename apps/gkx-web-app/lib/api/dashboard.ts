@@ -32,19 +32,30 @@ function isDateInCurrentWeek(raw?: string) {
 }
 
 export async function getDashboardKpis() {
-  const [goalkeepersPayload, coachesPayload, teamsPayload, sessionsPayload, evaluationsPayload] = await Promise.all([
+  const [goalkeepersPayload, teamsPayload, sessionsPayload, evaluationsPayload] = await Promise.all([
     apiRequest<unknown>("/goalkeepers", { method: "GET", auth: true }),
-    apiRequest<unknown>("/coaches", { method: "GET", auth: true }),
     apiRequest<unknown>("/teams", { method: "GET", auth: true }),
     apiRequest<unknown>("/training-sessions", { method: "GET", auth: true }),
     apiRequest<unknown>("/evaluations", { method: "GET", auth: true }),
   ]);
 
   const goalkeepers = extractArray<unknown>(goalkeepersPayload);
-  const coaches = extractArray<unknown>(coachesPayload);
   const teams = extractArray<unknown>(teamsPayload);
   const sessions = extractArray<SessionEntity>(sessionsPayload);
   const evaluations = extractArray<EvaluationEntity>(evaluationsPayload);
+  const teamsWithResponsible = teams.filter(
+    (item) =>
+      typeof item === "object" &&
+      item !== null &&
+      "coachId" in item &&
+      Boolean((item as { coachId?: string | null }).coachId),
+  );
+
+  const uniqueResponsibles = new Set(
+    teamsWithResponsible
+      .map((item) => (item as { coachId?: string | null }).coachId)
+      .filter((value): value is string => Boolean(value)),
+  );
 
   const sessionsThisWeek = sessions.filter((session) => {
     return isDateInCurrentWeek(session.date ?? session.createdAt);
@@ -56,7 +67,7 @@ export async function getDashboardKpis() {
 
   return {
     totalGoalkeepers: goalkeepers.length,
-    totalCoaches: coaches.length,
+    totalCoaches: uniqueResponsibles.size,
     totalTeams: teams.length,
     totalSessions: sessions.length,
     sessionsThisWeek,

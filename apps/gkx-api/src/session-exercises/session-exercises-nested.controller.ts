@@ -37,7 +37,7 @@ export class SessionExercisesNestedController {
   constructor(private readonly sessionExercisesService: SessionExercisesService) {}
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Agregar ejercicio a una sesion' })
   @ApiUuidParam('sessionId', 'Identificador de la sesion')
   @ApiTypedSuccessResponse({
@@ -61,11 +61,7 @@ export class SessionExercisesNestedController {
 
   @Get()
   @Roles(
-    Role.SUPER_ADMIN,
-    Role.TENANT_ADMIN,
-    Role.COACH,
-    Role.ASSISTANT_COACH,
-    Role.READONLY,
+    Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar ejercicios de una sesion' })
   @ApiUuidParam('sessionId', 'Identificador de la sesion')
@@ -84,7 +80,7 @@ export class SessionExercisesNestedController {
   }
 
   @Patch(':sessionExerciseId')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN, Role.COACH, Role.ASSISTANT_COACH)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar ejercicio de una sesion' })
   @ApiUuidParam('sessionId', 'Identificador de la sesion')
   @ApiUuidParam('sessionExerciseId', 'Identificador de session-exercise')
@@ -109,7 +105,7 @@ export class SessionExercisesNestedController {
   }
 
   @Delete(':sessionExerciseId')
-  @Roles(Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Eliminar ejercicio de una sesion' })
   @ApiUuidParam('sessionId', 'Identificador de la sesion')
   @ApiUuidParam('sessionExerciseId', 'Identificador de session-exercise')

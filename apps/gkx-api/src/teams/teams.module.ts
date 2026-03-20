@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CoachEntity } from '../coaches/coach.entity';
 import { GoalkeeperEntity } from '../goalkeepers/goalkeeper.entity';
 import { TenantEntity } from '../tenants/tenant.entity';
+import { UserEntity } from '../users/user.entity';
 import { TeamEntity } from './team.entity';
 import { TeamsController } from './teams.controller';
 import { TeamsService } from './teams.service';
@@ -12,7 +12,7 @@ import { TeamsService } from './teams.service';
     TypeOrmModule.forFeature([
       TeamEntity,
       TenantEntity,
-      CoachEntity,
+      UserEntity,
       GoalkeeperEntity,
     ]),
   ],

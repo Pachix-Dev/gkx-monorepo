@@ -116,42 +116,32 @@ export function ExerciseDetailClient({ exerciseId, backgrounds, shapeGroups }: E
         ) : null}
       </div>
 
-      {/* Tabs */}
-      <div className="flex justify-between">
-        <div className="flex gap-1 rounded-xl border border-border bg-card p-1 w-fit shadow-sm">
-            <button
-            type="button"
-            onClick={() => setActiveTab("info")}
-            className={`rounded-lg px-3 py-1 text-sm font-medium transition cursor-pointer ${
-                activeTab === "info"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            }`}
-            >
-            Información
-            </button>
-            <button
-            type="button"
-            onClick={() => setActiveTab("design")}
-            className={`rounded-lg px-3 py-1 text-sm font-medium transition cursor-pointer ${
-                activeTab === "design"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            }`}
-            >
-            Diseño táctico
-            </button>
-        </div>
-        <div className="flex justify-end">
-            <button
-                type="submit"
-                disabled={updateMutation.isPending}
-                className="rounded-md bg-primary px-2 py-1 text-sm font-medium text-primary-foreground transition hover:bg-secondary hover:text-secondary-foreground disabled:opacity-60 cursor-pointer"
-            >
-                {updateMutation.isPending ? "Guardando..." : "Guardar cambios"}
-            </button>
-        </div>
-      </div>
+      {/* Tabs */}      
+      <div className="flex gap-1 rounded-xl border border-border bg-card p-1 w-fit shadow-sm">
+          <button
+          type="button"
+          onClick={() => setActiveTab("info")}
+          className={`rounded-lg px-3 py-1 text-sm font-medium transition cursor-pointer ${
+              activeTab === "info"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+          >
+          Información
+          </button>
+          <button
+          type="button"
+          onClick={() => setActiveTab("design")}
+          className={`rounded-lg px-3 py-1 text-sm font-medium transition cursor-pointer ${
+              activeTab === "design"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+          >
+          Diseño táctico
+          </button>
+      </div>        
+      
 
       {/* Tab: Información */}
       {activeTab === "info" ? (
@@ -298,6 +288,16 @@ export function ExerciseDetailClient({ exerciseId, backgrounds, shapeGroups }: E
                 </select>
               </label>
 
+              <div className="flex justify-end">
+                <button
+                    type="submit"
+                    disabled={updateMutation.isPending}
+                    className="rounded-md bg-primary px-2 py-1 text-sm font-medium text-primary-foreground transition hover:bg-secondary hover:text-secondary-foreground disabled:opacity-60 cursor-pointer"
+                >
+                    {updateMutation.isPending ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </div>
+  
               {tenantId ? (
                 <input type="hidden" {...form.register("tenantId")} value={tenantId} />
               ) : null}              
