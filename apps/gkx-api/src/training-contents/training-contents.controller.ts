@@ -65,7 +65,6 @@ export class TrainingContentsController {
   )
   @ApiOperation({ summary: 'Listar contenidos de entrenamiento' })
   @ApiQuery({ name: 'trainingLineId', required: false, format: 'uuid' })
-  @ApiQuery({ name: 'level', required: false })
   @ApiQuery({ name: 'search', required: false })
   @ApiTypedSuccessResponse({
     message: 'Training contents retrieved successfully',
@@ -76,12 +75,10 @@ export class TrainingContentsController {
   async findAll(
     @CurrentUser() user: AuthenticatedUser,
     @Query('trainingLineId') trainingLineId?: string,
-    @Query('level') level?: string,
     @Query('search') search?: string,
   ) {
     const data = await this.contentsService.findAll(user, {
       trainingLineId,
-      level,
       search,
     });
     return { success: true, message: 'Training contents retrieved successfully', data };

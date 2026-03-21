@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateSessionContentDto {
   @ApiProperty({ format: 'uuid' })
@@ -18,21 +18,4 @@ export class CreateSessionContentDto {
   @ApiProperty({ example: 'Entrenamiento' })
   @IsString()
   taskName!: string;
-
-  @ApiPropertyOptional({ example: 1 })
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  order?: number;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  notes?: string;
-
-  @ApiPropertyOptional({ example: 20 })
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  customDurationMinutes?: number;
 }

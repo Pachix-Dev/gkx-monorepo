@@ -1,8 +1,6 @@
 import { apiRequest } from "@/lib/api/client";
 import { extractArray, extractData } from "@/lib/api/response";
 
-export type ExerciseStatus = "ACTIVE" | "INACTIVE";
-
 export type ExerciseEntity = {
   id: string;
   tenantId: string;
@@ -17,8 +15,6 @@ export type ExerciseEntity = {
   equipment?: string | null;
   videoUrl?: string | null;
   difficulty?: string | null;
-  order?: number | null;
-  status?: ExerciseStatus | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -42,8 +38,6 @@ export type CreateExerciseInput = {
   equipment?: string;
   videoUrl?: string;
   difficulty?: string;
-  order?: number;
-  status?: ExerciseStatus;
 };
 
 export type UpdateExerciseInput = Partial<CreateExerciseInput>;

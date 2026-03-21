@@ -182,8 +182,24 @@ function TacticalEditorClientContent({ backgrounds, shapeGroups, exerciseId }: T
     backgroundSrc,
   }), [elements, backgroundSrc]);
 
-  const { remoteDesign, isLoadingRemote, isSaving, debouncedSave } =
-    useTacticalDesignSync(exerciseId, getCurrentState);
+  const getPreviewBlob = useCallback(async () => {
+    const stage = stageRef.current;
+    if (!stage) return null;
+
+    const currentScale = stage.scaleX() || 1;
+
+    const dataUrl = stage.toDataURL({
+      // Normalize export resolution so preview quality does not depend on viewport size.
+      pixelRatio: Math.max(1, 1.15 / currentScale),
+      mimeType: "image/png",
+    });
+
+    const response = await fetch(dataUrl);
+    return response.blob();
+  }, []);
+
+  const { remoteDesign, debouncedSave } =
+    useTacticalDesignSync(exerciseId, getCurrentState, getPreviewBlob);
 
   // Load remote state on mount
   const hasLoadedRemoteRef = useRef(false);

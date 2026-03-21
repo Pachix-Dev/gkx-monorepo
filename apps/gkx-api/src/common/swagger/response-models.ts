@@ -237,18 +237,6 @@ export class TrainingLineModel {
   @ApiProperty({ nullable: true })
   description!: string | null;
 
-  @ApiProperty({ nullable: true })
-  color!: string | null;
-
-  @ApiProperty({ nullable: true })
-  icon!: string | null;
-
-  @ApiProperty()
-  order!: number;
-
-  @ApiProperty()
-  status!: string;
-
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;
 
@@ -272,20 +260,8 @@ export class TrainingContentModel {
   @ApiProperty({ nullable: true })
   description!: string | null;
 
-  @ApiProperty({ nullable: true })
-  objective!: string | null;
-
-  @ApiProperty({ nullable: true })
-  level!: string | null;
-
-  @ApiProperty({ nullable: true })
-  estimatedDurationMinutes!: number | null;
-
   @ApiProperty({ format: 'uuid', nullable: true })
   createdBy!: string | null;
-
-  @ApiProperty()
-  status!: string;
 
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;
@@ -333,12 +309,6 @@ export class ExerciseModel {
 
   @ApiProperty({ nullable: true })
   difficulty!: string | null;
-
-  @ApiProperty()
-  order!: number;
-
-  @ApiProperty()
-  status!: string;
 
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;

@@ -39,6 +39,7 @@ export function TrainingSessionsClient() {
   const [endDateValue, setEndDateValue] = useState<Date | undefined>(undefined);
   const [endHour, setEndHour] = useState("");
   const [sessionLocation, setSessionLocation] = useState("");
+  const [sessionDescription, setSessionDescription] = useState("");
   const [sessionNotes, setSessionNotes] = useState("");
   const [selectedContentIds, setSelectedContentIds] = useState<string[]>([]);
 
@@ -90,6 +91,7 @@ export function TrainingSessionsClient() {
         date: sessionDate,
         startTime: startIso,
         endTime: endIso,
+        description: sessionDescription || undefined,
         location: sessionLocation || undefined,
         notes: sessionNotes || undefined,
         status: "DRAFT",
@@ -111,6 +113,7 @@ export function TrainingSessionsClient() {
     setEndDateValue(undefined);
     setEndHour("");
     setSessionLocation("");
+    setSessionDescription("");
     setSessionNotes("");
     setSelectedContentIds([]);
   };
@@ -218,6 +221,17 @@ export function TrainingSessionsClient() {
                 className={inputClass}
               />
             </label>
+            <label className={`${labelClass} sm:col-span-2`}>
+              <span className={labelTextClass}>Descripción</span>
+              <textarea
+                value={sessionDescription}
+                onChange={(e) => setSessionDescription(e.target.value)}
+                placeholder="Ej: Sesión enfocada en técnica individual y toma de decisiones"
+                className={inputClass}
+                rows={3}
+              />
+            </label>
+            
           </div>
           <div className="flex justify-end">
             <button

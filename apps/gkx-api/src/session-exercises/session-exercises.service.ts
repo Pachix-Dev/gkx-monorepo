@@ -44,7 +44,10 @@ export class SessionExercisesService {
       dto.sessionContentId,
       tenantId,
     );
-    const exercise = await this.ensureExerciseBelongsToTenant(dto.exerciseId, tenantId);
+    const exercise = await this.ensureExerciseBelongsToTenant(
+      dto.exerciseId,
+      tenantId,
+    );
 
     if (sessionContent.sessionId !== session.id) {
       throw new BadRequestException(
@@ -59,12 +62,7 @@ export class SessionExercisesService {
       sessionId: session.id,
       sessionContentId: sessionContent.id,
       exerciseId: exercise.id,
-      order: dto.order ?? 0,
       selected: dto.selected ?? true,
-      customDurationMinutes: dto.customDurationMinutes ?? null,
-      customRepetitions: dto.customRepetitions ?? null,
-      customRestSeconds: dto.customRestSeconds ?? null,
-      coachNotes: dto.coachNotes ?? null,
       // Capture tactical design snapshot at assignment time
       tacticalStateSnapshot: exercise.tacticalState ?? null,
       tacticalPreviewUrlSnapshot: exercise.tacticalPreviewUrl ?? null,
@@ -80,7 +78,9 @@ export class SessionExercisesService {
     actor: AuthenticatedUser,
   ) {
     if (dto.sessionId !== sessionId) {
-      throw new BadRequestException('sessionId in body must match URL sessionId');
+      throw new BadRequestException(
+        'sessionId in body must match URL sessionId',
+      );
     }
 
     return this.create(dto, actor);
@@ -88,7 +88,9 @@ export class SessionExercisesService {
 
   async findAll(actor: AuthenticatedUser) {
     if (actor.role === Role.SUPER_ADMIN) {
-      return this.sessionExercisesRepository.find({ order: { createdAt: 'DESC' } });
+      return this.sessionExercisesRepository.find({
+        order: { createdAt: 'DESC' },
+      });
     }
 
     return this.sessionExercisesRepository
@@ -105,12 +107,16 @@ export class SessionExercisesService {
   }
 
   async findOne(id: string, actor: AuthenticatedUser) {
-    const entity = await this.sessionExercisesRepository.findOne({ where: { id } });
+    const entity = await this.sessionExercisesRepository.findOne({
+      where: { id },
+    });
     if (!entity) {
       throw new NotFoundException('Session exercise not found');
     }
 
-    const session = await this.sessionsRepository.findOne({ where: { id: entity.sessionId } });
+    const session = await this.sessionsRepository.findOne({
+      where: { id: entity.sessionId },
+    });
     if (!session) {
       throw new NotFoundException('Training session not found');
     }
@@ -119,7 +125,9 @@ export class SessionExercisesService {
   }
 
   async findBySession(sessionId: string, actor: AuthenticatedUser) {
-    const session = await this.sessionsRepository.findOne({ where: { id: sessionId } });
+    const session = await this.sessionsRepository.findOne({
+      where: { id: sessionId },
+    });
     if (!session) {
       throw new NotFoundException('Training session not found');
     }
@@ -128,11 +136,15 @@ export class SessionExercisesService {
 
     return this.sessionExercisesRepository.find({
       where: { sessionId, tenantId: session.tenantId },
-      order: { order: 'ASC', createdAt: 'ASC' },
+      order: { createdAt: 'ASC' },
     });
   }
 
-  async update(id: string, dto: UpdateSessionExerciseDto, actor: AuthenticatedUser) {
+  async update(
+    id: string,
+    dto: UpdateSessionExerciseDto,
+    actor: AuthenticatedUser,
+  ) {
     const entity = await this.findOne(id, actor);
 
     if (dto.tenantId && dto.tenantId !== entity.tenantId) {
@@ -140,7 +152,8 @@ export class SessionExercisesService {
     }
 
     const nextSessionId = dto.sessionId ?? entity.sessionId;
-    const nextSessionContentId = dto.sessionContentId ?? entity.sessionContentId;
+    const nextSessionContentId =
+      dto.sessionContentId ?? entity.sessionContentId;
     const nextExerciseId = dto.exerciseId ?? entity.exerciseId;
 
     const session = await this.ensureSessionBelongsToTenant(
@@ -169,13 +182,7 @@ export class SessionExercisesService {
       sessionId: nextSessionId,
       sessionContentId: nextSessionContentId,
       exerciseId: nextExerciseId,
-      order: dto.order ?? entity.order,
       selected: dto.selected ?? entity.selected,
-      customDurationMinutes:
-        dto.customDurationMinutes ?? entity.customDurationMinutes,
-      customRepetitions: dto.customRepetitions ?? entity.customRepetitions,
-      customRestSeconds: dto.customRestSeconds ?? entity.customRestSeconds,
-      coachNotes: dto.coachNotes ?? entity.coachNotes,
     });
 
     return this.sessionExercisesRepository.save(entity);
@@ -189,11 +196,15 @@ export class SessionExercisesService {
   ) {
     const entity = await this.findOne(id, actor);
     if (entity.sessionId !== sessionId) {
-      throw new BadRequestException('Session exercise does not belong to this session');
+      throw new BadRequestException(
+        'Session exercise does not belong to this session',
+      );
     }
 
     if (dto.sessionId && dto.sessionId !== sessionId) {
-      throw new BadRequestException('sessionId in body must match URL sessionId');
+      throw new BadRequestException(
+        'sessionId in body must match URL sessionId',
+      );
     }
 
     return this.update(id, { ...dto, sessionId }, actor);
@@ -205,10 +216,16 @@ export class SessionExercisesService {
     return { deleted: true };
   }
 
-  async removeWithinSession(sessionId: string, id: string, actor: AuthenticatedUser) {
+  async removeWithinSession(
+    sessionId: string,
+    id: string,
+    actor: AuthenticatedUser,
+  ) {
     const entity = await this.findOne(id, actor);
     if (entity.sessionId !== sessionId) {
-      throw new BadRequestException('Session exercise does not belong to this session');
+      throw new BadRequestException(
+        'Session exercise does not belong to this session',
+      );
     }
 
     return this.remove(id, actor);
@@ -232,7 +249,10 @@ export class SessionExercisesService {
     actor: AuthenticatedUser,
   ) {
     if (actor.role === Role.SUPER_ADMIN) return;
-    if (session.tenantId !== actor.tenantId || session.createdByUserId !== actor.userId) {
+    if (
+      session.tenantId !== actor.tenantId ||
+      session.createdByUserId !== actor.userId
+    ) {
       throw new ForbiddenException(
         'You can only access your own training sessions',
       );
@@ -240,7 +260,9 @@ export class SessionExercisesService {
   }
 
   private async ensureTenantExists(tenantId: string) {
-    const tenant = await this.tenantsRepository.findOne({ where: { id: tenantId } });
+    const tenant = await this.tenantsRepository.findOne({
+      where: { id: tenantId },
+    });
     if (!tenant) throw new NotFoundException('Tenant not found');
   }
 
@@ -249,7 +271,9 @@ export class SessionExercisesService {
     tenantId: string,
     actor: AuthenticatedUser,
   ) {
-    const session = await this.sessionsRepository.findOne({ where: { id: sessionId } });
+    const session = await this.sessionsRepository.findOne({
+      where: { id: sessionId },
+    });
     if (!session) throw new NotFoundException('Training session not found');
     if (session.tenantId !== tenantId) {
       throw new BadRequestException(
@@ -267,7 +291,8 @@ export class SessionExercisesService {
     const sessionContent = await this.sessionContentsRepository.findOne({
       where: { id: sessionContentId },
     });
-    if (!sessionContent) throw new NotFoundException('Session content not found');
+    if (!sessionContent)
+      throw new NotFoundException('Session content not found');
     if (sessionContent.tenantId !== tenantId) {
       throw new BadRequestException(
         'Session content does not belong to the provided tenant',
@@ -276,8 +301,13 @@ export class SessionExercisesService {
     return sessionContent;
   }
 
-  private async ensureExerciseBelongsToTenant(exerciseId: string, tenantId: string) {
-    const exercise = await this.exercisesRepository.findOne({ where: { id: exerciseId } });
+  private async ensureExerciseBelongsToTenant(
+    exerciseId: string,
+    tenantId: string,
+  ) {
+    const exercise = await this.exercisesRepository.findOne({
+      where: { id: exerciseId },
+    });
     if (!exercise) throw new NotFoundException('Exercise not found');
     if (exercise.tenantId !== tenantId) {
       throw new BadRequestException(

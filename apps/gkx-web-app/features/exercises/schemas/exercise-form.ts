@@ -15,8 +15,6 @@ export const createExerciseSchema = z.object({
   equipment: z.string().optional(),
   videoUrl: z.string().url("Video URL invalida").or(z.literal("")).optional(),
   difficulty: z.string().optional(),
-  order: optionalInt,
-  status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
 });
 
 export const updateExerciseSchema = createExerciseSchema;

@@ -1,5 +1,3 @@
-import { ExerciseStatus } from '../enums/exercise.enum';
-
 export type ExerciseEntity = {
   id: string;
   tenantId: string;
@@ -14,8 +12,6 @@ export type ExerciseEntity = {
   equipment?: string | null;
   videoUrl?: string | null;
   difficulty?: string | null;
-  order?: number | null;
-  status?: ExerciseStatus | null;
   // Tactical fields
   tacticalState?: Record<string, unknown> | null; // JSON stored in DB
   tacticalStateVersion?: number | null;
@@ -45,8 +41,6 @@ export type CreateExerciseInput = {
   equipment?: string;
   videoUrl?: string;
   difficulty?: string;
-  order?: number;
-  status?: ExerciseStatus;
 };
 
 export type UpdateExerciseInput = Partial<CreateExerciseInput>;

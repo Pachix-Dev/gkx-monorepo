@@ -4,7 +4,7 @@ export const queryKeys = {
   goalkeepers: ["goalkeepers"] as const,
   teams: ["teams"] as const,
   trainingLines: ["training-lines"] as const,
-  trainingContents: (filters: { trainingLineId?: string; level?: string; search?: string } = {}) =>
+  trainingContents: (filters: { trainingLineId?: string; search?: string } = {}) =>
     ["training-contents", filters] as const,
   exercises: (filters: { trainingContentId?: string; difficulty?: string; search?: string } = {}) =>
     ["exercises", filters] as const,

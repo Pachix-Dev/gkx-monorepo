@@ -1,14 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsEnum,
-  IsInt,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
-  Min,
 } from 'class-validator';
-import { TrainingContentStatus } from '../training-content.entity';
 
 export class CreateTrainingContentDto {
   @ApiProperty({ format: 'uuid' })
@@ -29,30 +25,8 @@ export class CreateTrainingContentDto {
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  objective?: string;
-
-  @ApiPropertyOptional({ example: 'INTERMEDIATE' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  level?: string;
-
-  @ApiPropertyOptional({ example: 20 })
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  estimatedDurationMinutes?: number;
-
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
   @IsUUID()
   createdBy?: string;
-
-  @ApiPropertyOptional({ enum: TrainingContentStatus })
-  @IsOptional()
-  @IsEnum(TrainingContentStatus)
-  status?: TrainingContentStatus;
 }

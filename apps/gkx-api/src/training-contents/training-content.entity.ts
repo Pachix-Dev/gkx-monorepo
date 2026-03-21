@@ -11,11 +11,6 @@ import { TenantEntity } from '../tenants/tenant.entity';
 import { TrainingLineEntity } from '../training-lines/training-line.entity';
 import { UserEntity } from '../users/user.entity';
 
-export enum TrainingContentStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-}
-
 @Entity({ name: 'training_contents' })
 export class TrainingContentEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -41,28 +36,12 @@ export class TrainingContentEntity {
   @Column({ type: 'text', nullable: true })
   description!: string | null;
 
-  @Column({ type: 'text', nullable: true })
-  objective!: string | null;
-
-  @Column({ type: 'varchar', length: 50, nullable: true })
-  level!: string | null;
-
-  @Column({ type: 'int', nullable: true })
-  estimatedDurationMinutes!: number | null;
-
   @Column({ type: 'uuid', nullable: true })
   createdBy!: string | null;
 
   @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'createdBy' })
   createdByUser!: UserEntity | null;
-
-  @Column({
-    type: 'enum',
-    enum: TrainingContentStatus,
-    default: TrainingContentStatus.ACTIVE,
-  })
-  status!: TrainingContentStatus;
 
   @CreateDateColumn()
   createdAt!: Date;

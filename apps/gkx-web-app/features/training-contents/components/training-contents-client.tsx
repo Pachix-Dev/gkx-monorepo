@@ -26,7 +26,6 @@ export function TrainingContentsClient() {
   const tenantId = authUser?.tenantId;
   const [search, setSearch] = useState("");
   const [lineFilter, setLineFilter] = useState("");
-  const [levelFilter, setLevelFilter] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<FormMode>("create");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -34,10 +33,9 @@ export function TrainingContentsClient() {
   const filters = useMemo(
     () => ({
       trainingLineId: lineFilter || undefined,
-      level: levelFilter || undefined,
       search: search.trim() || undefined,
     }),
-    [lineFilter, levelFilter, search],
+    [lineFilter, search],
   );
 
   const trainingContentsQuery = useTrainingContentsQuery(filters);
@@ -53,10 +51,6 @@ export function TrainingContentsClient() {
       trainingLineId: "",
       name: "",
       description: "",
-      objective: "",
-      level: "",
-      estimatedDurationMinutes: undefined,
-      status: "ACTIVE",
     },
   });
 
@@ -67,10 +61,6 @@ export function TrainingContentsClient() {
       trainingLineId: "",
       name: "",
       description: "",
-      objective: "",
-      level: "",
-      estimatedDurationMinutes: undefined,
-      status: "ACTIVE",
     },
   });
 
@@ -91,10 +81,6 @@ export function TrainingContentsClient() {
       trainingLineId: lineFilter || "",
       name: "",
       description: "",
-      objective: "",
-      level: "",
-      estimatedDurationMinutes: undefined,
-      status: "ACTIVE",
     });
     setIsFormOpen(true);
   };
@@ -110,10 +96,6 @@ export function TrainingContentsClient() {
       trainingLineId: target.trainingLineId,
       name: target.name,
       description: target.description || "",
-      objective: target.objective || "",
-      level: target.level || "",
-      estimatedDurationMinutes: target.estimatedDurationMinutes ?? undefined,
-      status: target.status || "ACTIVE",
     });
     setIsFormOpen(true);
   };
@@ -126,10 +108,6 @@ export function TrainingContentsClient() {
   const normalizePayload = (values: CreateTrainingContentFormValues | UpdateTrainingContentFormValues) => ({
     ...values,
     description: values.description || undefined,
-    objective: values.objective || undefined,
-    level: values.level || undefined,
-    estimatedDurationMinutes: values.estimatedDurationMinutes,
-    status: values.status || undefined,
   });
 
   const onCreateSubmit = async (values: CreateTrainingContentFormValues) => {
@@ -186,13 +164,13 @@ export function TrainingContentsClient() {
   return (
     <section className="space-y-4">
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-[1fr_220px_180px_auto] md:items-end">
+        <div className="grid gap-3 md:grid-cols-[1fr_220px_auto] md:items-end">
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Buscar</span>
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por nombre u objetivo"
+              placeholder="Buscar por nombre"
               className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none ring-offset-2 transition placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
             />
           </label>
@@ -211,16 +189,6 @@ export function TrainingContentsClient() {
                 </option>
               ))}
             </select>
-          </label>
-
-          <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Level</span>
-            <input
-              value={levelFilter}
-              onChange={(event) => setLevelFilter(event.target.value)}
-              placeholder="BASIC"
-              className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
-            />
           </label>
 
           <button
@@ -287,44 +255,6 @@ export function TrainingContentsClient() {
               />
             </label>
 
-            <label className="flex flex-col gap-1 md:col-span-2">
-              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Objetivo</span>
-              <input
-                {...activeForm.register("objective")}
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Level</span>
-              <input
-                {...activeForm.register("level")}
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Duracion (min)</span>
-              <input
-                type="number"
-                {...activeForm.register("estimatedDurationMinutes", {
-                  setValueAs: (value) => (value === "" ? undefined : Number(value)),
-                })}
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Estado</span>
-              <select
-                {...activeForm.register("status")}
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="INACTIVE">INACTIVE</option>
-              </select>
-            </label>
-
             <div className="md:col-span-2">
               <button
                 type="submit"
@@ -353,9 +283,6 @@ export function TrainingContentsClient() {
                   <tr>
                     <th className="px-4 py-3 font-medium text-foreground">Nombre</th>
                     <th className="px-4 py-3 font-medium text-foreground">Training line</th>
-                    <th className="px-4 py-3 font-medium text-foreground">Level</th>
-                    <th className="px-4 py-3 font-medium text-foreground">Duracion</th>
-                    <th className="px-4 py-3 font-medium text-foreground">Estado</th>
                     <th className="px-4 py-3 font-medium text-foreground">Acciones</th>
                   </tr>
                 </thead>
@@ -364,9 +291,6 @@ export function TrainingContentsClient() {
                     <tr key={item.id} className="border-b border-border/70 last:border-b-0">
                       <td className="px-4 py-3 text-card-foreground">{item.name}</td>
                       <td className="px-4 py-3 text-muted-foreground">{lineById.get(item.trainingLineId)?.name || item.trainingLineId}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{item.level || "-"}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{item.estimatedDurationMinutes ?? "-"}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{item.status || "-"}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
                           <button

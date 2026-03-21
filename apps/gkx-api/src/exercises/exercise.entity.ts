@@ -10,11 +10,6 @@ import {
 import { TenantEntity } from '../tenants/tenant.entity';
 import { TrainingContentEntity } from '../training-contents/training-content.entity';
 
-export enum ExerciseStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-}
-
 @Entity({ name: 'exercises' })
 export class ExerciseEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -63,12 +58,6 @@ export class ExerciseEntity {
 
   @Column({ type: 'varchar', length: 50, nullable: true })
   difficulty!: string | null;
-
-  @Column({ type: 'int', default: 0 })
-  order!: number;
-
-  @Column({ type: 'enum', enum: ExerciseStatus, default: ExerciseStatus.ACTIVE })
-  status!: ExerciseStatus;
 
   // Tactical design fields
   @Column({ type: 'jsonb', nullable: true })

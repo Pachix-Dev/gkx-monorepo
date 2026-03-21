@@ -33,21 +33,8 @@ export class SessionContentEntity {
   @Column({ type: 'uuid', nullable: true })
   trainingContentId!: string | null;
 
-  @ManyToOne(() => TrainingContentEntity, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'trainingContentId' })
-  trainingContent!: TrainingContentEntity | null;
-
   @Column({ type: 'varchar', length: 150 })
   taskName!: string;
-
-  @Column({ type: 'int', default: 0 })
-  order!: number;
-
-  @Column({ type: 'text', nullable: true })
-  notes!: string | null;
-
-  @Column({ type: 'int', nullable: true })
-  customDurationMinutes!: number | null;
 
   @CreateDateColumn()
   createdAt!: Date;

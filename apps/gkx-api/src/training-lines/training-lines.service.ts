@@ -11,7 +11,7 @@ import { Role } from '../auth/roles.enum';
 import { TenantEntity } from '../tenants/tenant.entity';
 import { CreateTrainingLineDto } from './dto/create-training-line.dto';
 import { UpdateTrainingLineDto } from './dto/update-training-line.dto';
-import { TrainingLineEntity, TrainingLineStatus } from './training-line.entity';
+import { TrainingLineEntity } from './training-line.entity';
 
 @Injectable()
 export class TrainingLinesService {
@@ -30,10 +30,6 @@ export class TrainingLinesService {
       tenantId,
       name: dto.name,
       description: dto.description ?? null,
-      color: dto.color ?? null,
-      icon: dto.icon ?? null,
-      order: dto.order ?? 0,
-      status: dto.status ?? TrainingLineStatus.ACTIVE,
     });
 
     return this.trainingLinesRepository.save(entity);
@@ -41,12 +37,12 @@ export class TrainingLinesService {
 
   async findAll(actor: AuthenticatedUser) {
     if (actor.role === Role.SUPER_ADMIN) {
-      return this.trainingLinesRepository.find({ order: { order: 'ASC' } });
+      return this.trainingLinesRepository.find({ order: { createdAt: 'ASC' } });
     }
 
     return this.trainingLinesRepository.find({
       where: { tenantId: actor.tenantId },
-      order: { order: 'ASC' },
+      order: { createdAt: 'ASC' },
     });
   }
 
@@ -74,10 +70,6 @@ export class TrainingLinesService {
     Object.assign(entity, {
       name: dto.name ?? entity.name,
       description: dto.description ?? entity.description,
-      color: dto.color ?? entity.color,
-      icon: dto.icon ?? entity.icon,
-      order: dto.order ?? entity.order,
-      status: dto.status ?? entity.status,
     });
 
     return this.trainingLinesRepository.save(entity);

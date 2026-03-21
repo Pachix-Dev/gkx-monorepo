@@ -58,8 +58,6 @@ export function ExercisesClient() {
       equipment: "",
       videoUrl: "",
       difficulty: "",
-      order: undefined,
-      status: "ACTIVE",
     },
   });
 
@@ -91,8 +89,6 @@ export function ExercisesClient() {
       equipment: "",
       videoUrl: "",
       difficulty: difficultyFilter || "",
-      order: undefined,
-      status: "ACTIVE",
     });
     setIsFormOpen(true);
   };
@@ -112,8 +108,6 @@ export function ExercisesClient() {
     equipment: values.equipment || undefined,
     videoUrl: values.videoUrl || undefined,
     difficulty: values.difficulty || undefined,
-    order: values.order,
-    status: values.status || undefined,
   });
 
   const onCreateSubmit = async (values: CreateExerciseFormValues) => {
@@ -322,28 +316,6 @@ export function ExercisesClient() {
               />
             </label>
 
-            <label className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Order</span>
-              <input
-                type="number"
-                {...createForm.register("order", {
-                  setValueAs: (value) => (value === "" ? undefined : Number(value)),
-                })}
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Estado</span>
-              <select
-                {...createForm.register("status")}
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="INACTIVE">INACTIVE</option>
-              </select>
-            </label>
-
             <div className="md:col-span-2">
               <button
                 type="submit"
@@ -374,7 +346,6 @@ export function ExercisesClient() {
                     <th className="px-4 py-3 font-medium text-foreground">Content</th>
                     <th className="px-4 py-3 font-medium text-foreground">Difficulty</th>
                     <th className="px-4 py-3 font-medium text-foreground">Duracion</th>
-                    <th className="px-4 py-3 font-medium text-foreground">Estado</th>
                     <th className="px-4 py-3 font-medium text-foreground">Acciones</th>
                   </tr>
                 </thead>
@@ -389,7 +360,6 @@ export function ExercisesClient() {
                       <td className="px-4 py-3 text-muted-foreground">{contentById.get(item.trainingContentId)?.name || item.trainingContentId}</td>
                       <td className="px-4 py-3 text-muted-foreground">{item.difficulty || "-"}</td>
                       <td className="px-4 py-3 text-muted-foreground">{item.durationMinutes ?? "-"}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{item.status || "-"}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
                           <Link

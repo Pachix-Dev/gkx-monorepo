@@ -45,23 +45,8 @@ export class SessionExerciseEntity {
   @JoinColumn({ name: 'exerciseId' })
   exercise!: ExerciseEntity;
 
-  @Column({ type: 'int', default: 0 })
-  order!: number;
-
   @Column({ type: 'boolean', default: true })
   selected!: boolean;
-
-  @Column({ type: 'int', nullable: true })
-  customDurationMinutes!: number | null;
-
-  @Column({ type: 'int', nullable: true })
-  customRepetitions!: number | null;
-
-  @Column({ type: 'int', nullable: true })
-  customRestSeconds!: number | null;
-
-  @Column({ type: 'text', nullable: true })
-  coachNotes!: string | null;
 
   // Tactical design snapshot (frozen at assignment time for field sheets)
   @Column({ type: 'jsonb', nullable: true })

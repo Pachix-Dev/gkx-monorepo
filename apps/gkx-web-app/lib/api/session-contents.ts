@@ -5,11 +5,7 @@ export type SessionTaskEntity = {
   id: string;
   tenantId: string;
   sessionId: string;
-  trainingContentId?: string | null;
   taskName: string;
-  order: number;
-  notes?: string | null;
-  customDurationMinutes?: number | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -17,11 +13,7 @@ export type SessionTaskEntity = {
 export type CreateSessionTaskInput = {
   tenantId: string;
   sessionId: string;
-  trainingContentId?: string;
   taskName: string;
-  order?: number;
-  notes?: string;
-  customDurationMinutes?: number;
 };
 
 export type UpdateSessionTaskInput = Partial<CreateSessionTaskInput>;

@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { ExerciseStatus } from '../enums/exercise.enum';
 
 const optionalInt = z.number().int().min(0).optional();
 
@@ -16,10 +15,6 @@ export const createExerciseSchema = z.object({
   equipment: z.string().optional(),
   videoUrl: z.string().url('Video URL invalida').or(z.literal('')).optional(),
   difficulty: z.string().optional(),
-  order: optionalInt,
-  status: z
-    .enum([ExerciseStatus.ACTIVE, ExerciseStatus.INACTIVE])
-    .optional(),
 });
 
 export const updateExerciseSchema = createExerciseSchema;

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { TacticalPreviewStorageService } from '../common/storage/tactical-preview-storage.service';
 import { TenantEntity } from '../tenants/tenant.entity';
 import { TrainingContentEntity } from '../training-contents/training-content.entity';
 import { ExerciseEntity } from './exercise.entity';
@@ -21,7 +22,7 @@ import { ExercisesService } from './exercises.service';
     ExercisesNestedController,
     ExercisesTacticalController,
   ],
-  providers: [ExercisesService],
+  providers: [ExercisesService, TacticalPreviewStorageService],
   exports: [ExercisesService, TypeOrmModule],
 })
 export class ExercisesModule {}

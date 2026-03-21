@@ -75,14 +75,22 @@ export async function apiRequest<T>(path: string, init: ApiRequestInit = {}): Pr
   const { auth = false, headers, body, ...rest } = init;
 
   const makeRequest = async (token: string | null) => {
+    const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
+    const mergedHeaders = {
+      ...(auth && token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
+      ...(headers ?? {}),
+    };
+
     return fetch(endpoint(path), {
       ...rest,
-      headers: {
-        "Content-Type": "application/json",
-        ...(auth && token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(headers ?? {}),
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      headers: mergedHeaders,
+      body:
+        body === undefined
+          ? undefined
+          : isFormData
+            ? (body as BodyInit)
+            : JSON.stringify(body),
     });
   };
 

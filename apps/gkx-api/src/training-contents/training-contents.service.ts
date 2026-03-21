@@ -13,14 +13,10 @@ import { TrainingLineEntity } from '../training-lines/training-line.entity';
 import { UserEntity } from '../users/user.entity';
 import { CreateTrainingContentDto } from './dto/create-training-content.dto';
 import { UpdateTrainingContentDto } from './dto/update-training-content.dto';
-import {
-  TrainingContentEntity,
-  TrainingContentStatus,
-} from './training-content.entity';
+import { TrainingContentEntity } from './training-content.entity';
 
 interface TrainingContentFilters {
   trainingLineId?: string;
-  level?: string;
   search?: string;
 }
 
@@ -48,11 +44,7 @@ export class TrainingContentsService {
       trainingLineId: dto.trainingLineId,
       name: dto.name,
       description: dto.description ?? null,
-      objective: dto.objective ?? null,
-      level: dto.level ?? null,
-      estimatedDurationMinutes: dto.estimatedDurationMinutes ?? null,
       createdBy: dto.createdBy ?? null,
-      status: dto.status ?? TrainingContentStatus.ACTIVE,
     });
 
     return this.contentsRepository.save(entity);
@@ -62,7 +54,6 @@ export class TrainingContentsService {
     const where = {
       ...(actor.role === Role.SUPER_ADMIN ? {} : { tenantId: actor.tenantId }),
       ...(filters.trainingLineId ? { trainingLineId: filters.trainingLineId } : {}),
-      ...(filters.level ? { level: ILike(filters.level) } : {}),
       ...(filters.search ? { name: ILike(`%${filters.search}%`) } : {}),
     };
 
@@ -112,12 +103,7 @@ export class TrainingContentsService {
       trainingLineId: dto.trainingLineId ?? entity.trainingLineId,
       name: dto.name ?? entity.name,
       description: dto.description ?? entity.description,
-      objective: dto.objective ?? entity.objective,
-      level: dto.level ?? entity.level,
-      estimatedDurationMinutes:
-        dto.estimatedDurationMinutes ?? entity.estimatedDurationMinutes,
       createdBy: dto.createdBy ?? entity.createdBy,
-      status: dto.status ?? entity.status,
     });
 
     return this.contentsRepository.save(entity);

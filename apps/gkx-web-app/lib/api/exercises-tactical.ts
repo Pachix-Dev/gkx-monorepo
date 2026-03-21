@@ -46,3 +46,22 @@ export async function updateTacticalDesign(
 
   return extractData<TacticalDesignResponse>(payload);
 }
+
+export async function uploadTacticalPreview(
+  exerciseId: string,
+  file: Blob
+) {
+  const body = new FormData();
+  body.append("file", file, `tactical-preview-${exerciseId}.png`);
+
+  const payload = await apiRequest<unknown>(
+    `/exercises/${exerciseId}/tactical-preview`,
+    {
+      method: "PUT",
+      auth: true,
+      body,
+    }
+  );
+
+  return extractData<TacticalDesignResponse>(payload);
+}

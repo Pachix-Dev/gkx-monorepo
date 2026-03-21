@@ -1,8 +1,3 @@
-export enum ExerciseStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-}
-
 export enum LinePattern {
   SOLID = 'solid',
   DASHED = 'dashed',

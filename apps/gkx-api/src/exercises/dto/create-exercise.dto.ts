@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -8,7 +7,6 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { ExerciseStatus } from '../exercise.entity';
 
 export class CreateExerciseDto {
   @ApiProperty({ format: 'uuid' })
@@ -73,15 +71,4 @@ export class CreateExerciseDto {
   @IsString()
   @MaxLength(50)
   difficulty?: string;
-
-  @ApiPropertyOptional({ example: 1 })
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  order?: number;
-
-  @ApiPropertyOptional({ enum: ExerciseStatus })
-  @IsOptional()
-  @IsEnum(ExerciseStatus)
-  status?: ExerciseStatus;
 }

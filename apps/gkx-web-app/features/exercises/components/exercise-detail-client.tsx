@@ -61,8 +61,6 @@ export function ExerciseDetailClient({ exerciseId, backgrounds, shapeGroups }: E
           equipment: exercise.equipment ?? "",
           videoUrl: exercise.videoUrl ?? "",
           difficulty: exercise.difficulty ?? "",
-          order: exercise.order ?? undefined,
-          status: exercise.status ?? "ACTIVE",
         }
       : undefined,
   });
@@ -103,17 +101,6 @@ export function ExerciseDetailClient({ exerciseId, backgrounds, shapeGroups }: E
           )}
         </div>
 
-        {exercise?.status ? (
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              exercise.status === "ACTIVE"
-                ? "bg-primary/15 text-primary"
-                : "bg-muted text-muted-foreground"
-            }`}
-          >
-            {exercise.status}
-          </span>
-        ) : null}
       </div>
 
       {/* Tabs */}      
@@ -257,17 +244,6 @@ export function ExerciseDetailClient({ exerciseId, backgrounds, shapeGroups }: E
                 />
               </label>
 
-              <label className="flex flex-col gap-1">
-                <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Orden</span>
-                <input
-                  type="number"
-                  {...form.register("order", {
-                    setValueAs: (value) => (value === "" ? undefined : Number(value)),
-                  })}
-                  className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
-                />
-              </label>
-
               <label className="flex flex-col gap-1 md:col-span-2">
                 <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Video URL</span>
                 <input
@@ -275,17 +251,6 @@ export function ExerciseDetailClient({ exerciseId, backgrounds, shapeGroups }: E
                   type="url"
                   className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
                 />
-              </label>
-
-              <label className="flex flex-col gap-1">
-                <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Estado</span>
-                <select
-                  {...form.register("status")}
-                  className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="INACTIVE">INACTIVE</option>
-                </select>
               </label>
 
               <div className="flex justify-end">

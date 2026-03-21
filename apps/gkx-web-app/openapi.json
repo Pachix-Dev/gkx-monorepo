@@ -3332,6 +3332,88 @@
         ]
       }
     },
+    "/api/exercises/{id}/tactical-preview": {
+      "put": {
+        "operationId": "ExercisesTacticalController_uploadTacticalPreview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Identificador del ejercicio",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tactical preview uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Tactical preview uploaded successfully"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/TacticalDesignResponseDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud invalida"
+          },
+          "401": {
+            "description": "No autenticado o token invalido"
+          },
+          "403": {
+            "description": "No tiene permisos para esta accion"
+          },
+          "404": {
+            "description": "Recurso no encontrado"
+          }
+        },
+        "security": [
+          {
+            "jwt-auth": []
+          }
+        ],
+        "summary": "Subir snapshot tactico del ejercicio",
+        "tags": [
+          "Exercises - Tactical Design"
+        ]
+      }
+    },
     "/api/training-sessions": {
       "post": {
         "operationId": "TrainingSessionsController_create",

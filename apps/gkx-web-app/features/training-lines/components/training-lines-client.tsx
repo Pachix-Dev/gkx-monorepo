@@ -39,10 +39,6 @@ export function TrainingLinesClient() {
       tenantId: tenantId || "",
       name: "",
       description: "",
-      color: "",
-      icon: "",
-      order: undefined,
-      status: "ACTIVE",
     },
   });
 
@@ -52,10 +48,6 @@ export function TrainingLinesClient() {
       tenantId: tenantId || "",
       name: "",
       description: "",
-      color: "",
-      icon: "",
-      order: undefined,
-      status: "ACTIVE",
     },
   });
 
@@ -70,8 +62,7 @@ export function TrainingLinesClient() {
     return trainingLines.filter((item) => {
       const name = item.name.toLowerCase();
       const description = item.description?.toLowerCase() ?? "";
-      const status = item.status?.toLowerCase() ?? "";
-      return name.includes(value) || description.includes(value) || status.includes(value);
+      return name.includes(value) || description.includes(value);
     });
   }, [search, trainingLines]);
 
@@ -82,10 +73,6 @@ export function TrainingLinesClient() {
       tenantId: tenantId || "",
       name: "",
       description: "",
-      color: "",
-      icon: "",
-      order: undefined,
-      status: "ACTIVE",
     });
     setIsFormOpen(true);
   };
@@ -100,10 +87,6 @@ export function TrainingLinesClient() {
       tenantId: target.tenantId || tenantId || "",
       name: target.name,
       description: target.description || "",
-      color: target.color || "",
-      icon: target.icon || "",
-      order: target.order ?? undefined,
-      status: target.status || "ACTIVE",
     });
     setIsFormOpen(true);
   };
@@ -116,10 +99,6 @@ export function TrainingLinesClient() {
   const normalizePayload = (values: CreateTrainingLineFormValues | UpdateTrainingLineFormValues) => ({
     ...values,
     description: values.description || undefined,
-    color: values.color || undefined,
-    icon: values.icon || undefined,
-    order: values.order,
-    status: values.status || undefined,
   });
 
   const onCreateSubmit = async (values: CreateTrainingLineFormValues) => {
@@ -182,7 +161,7 @@ export function TrainingLinesClient() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Filtrar por nombre, descripcion o estado"
+              placeholder="Filtrar por nombre o descripcion"
               className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none ring-offset-2 transition placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
             />
           </label>
@@ -236,45 +215,6 @@ export function TrainingLinesClient() {
               />
             </label>
 
-            <label className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Color</span>
-              <input
-                {...activeForm.register("color")}
-                placeholder="#C7F703"
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Icon</span>
-              <input
-                {...activeForm.register("icon")}
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Order</span>
-              <input
-                type="number"
-                {...activeForm.register("order", {
-                  setValueAs: (value) => (value === "" ? undefined : Number(value)),
-                })}
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Estado</span>
-              <select
-                {...activeForm.register("status")}
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="INACTIVE">INACTIVE</option>
-              </select>
-            </label>
-
             <div className="md:col-span-2">
               <button
                 type="submit"
@@ -302,9 +242,6 @@ export function TrainingLinesClient() {
                   <tr>
                     <th className="px-4 py-3 font-medium text-foreground">Nombre</th>
                     <th className="px-4 py-3 font-medium text-foreground">Descripcion</th>
-                    <th className="px-4 py-3 font-medium text-foreground">Color</th>
-                    <th className="px-4 py-3 font-medium text-foreground">Order</th>
-                    <th className="px-4 py-3 font-medium text-foreground">Estado</th>
                     <th className="px-4 py-3 font-medium text-foreground">Acciones</th>
                   </tr>
                 </thead>
@@ -313,9 +250,6 @@ export function TrainingLinesClient() {
                     <tr key={item.id} className="border-b border-border/70 last:border-b-0">
                       <td className="px-4 py-3 text-card-foreground">{item.name}</td>
                       <td className="px-4 py-3 text-muted-foreground">{item.description || "-"}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{item.color || "-"}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{item.order ?? "-"}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{item.status || "-"}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
                           <button

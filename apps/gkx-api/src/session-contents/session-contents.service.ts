@@ -50,9 +50,6 @@ export class SessionContentsService {
       sessionId: session.id,
       trainingContentId: content?.id ?? null,
       taskName: dto.taskName,
-      order: dto.order ?? 0,
-      notes: dto.notes ?? null,
-      customDurationMinutes: dto.customDurationMinutes ?? null,
     });
 
     return this.sessionContentsRepository.save(entity);
@@ -112,7 +109,7 @@ export class SessionContentsService {
 
     return this.sessionContentsRepository.find({
       where: { sessionId, tenantId: session.tenantId },
-      order: { order: 'ASC', createdAt: 'ASC' },
+      order: { createdAt: 'ASC' },
     });
   }
 
@@ -152,10 +149,6 @@ export class SessionContentsService {
           ? entity.trainingContentId
           : dto.trainingContentId,
       taskName: dto.taskName ?? entity.taskName,
-      order: dto.order ?? entity.order,
-      notes: dto.notes ?? entity.notes,
-      customDurationMinutes:
-        dto.customDurationMinutes ?? entity.customDurationMinutes,
     });
 
     return this.sessionContentsRepository.save(entity);

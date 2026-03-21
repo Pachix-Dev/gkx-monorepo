@@ -1,17 +1,11 @@
 import { apiRequest } from "@/lib/api/client";
 import { extractArray, extractData } from "@/lib/api/response";
 
-export type TrainingLineStatus = "ACTIVE" | "INACTIVE";
-
 export type TrainingLineEntity = {
   id: string;
   tenantId: string;
   name: string;
   description?: string | null;
-  color?: string | null;
-  icon?: string | null;
-  order?: number | null;
-  status?: TrainingLineStatus | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -20,10 +14,6 @@ export type CreateTrainingLineInput = {
   tenantId: string;
   name: string;
   description?: string;
-  color?: string;
-  icon?: string;
-  order?: number;
-  status?: TrainingLineStatus;
 };
 
 export type UpdateTrainingLineInput = Partial<CreateTrainingLineInput>;

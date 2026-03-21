@@ -7,12 +7,7 @@ export type SessionExerciseEntity = {
   sessionId: string;
   sessionContentId: string;
   exerciseId: string;
-  order: number;
   selected: boolean;
-  customDurationMinutes?: number | null;
-  customRepetitions?: number | null;
-  customRestSeconds?: number | null;
-  coachNotes?: string | null;
   tacticalPreviewUrlSnapshot?: string | null;
   createdAt?: string;
   updatedAt?: string;
@@ -23,12 +18,7 @@ export type CreateSessionExerciseInput = {
   sessionId: string;
   sessionContentId: string;
   exerciseId: string;
-  order?: number;
   selected?: boolean;
-  customDurationMinutes?: number;
-  customRepetitions?: number;
-  customRestSeconds?: number;
-  coachNotes?: string;
 };
 
 export type UpdateSessionExerciseInput = Partial<CreateSessionExerciseInput>;

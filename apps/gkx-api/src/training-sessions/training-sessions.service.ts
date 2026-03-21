@@ -5,7 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from 'pdf-lib';
 import { In, Repository } from 'typeorm';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../auth/roles.enum';
@@ -116,7 +118,9 @@ export class TrainingSessionsService {
         )
       : entity.trainingContentIds;
 
-    const nextStartTime = dto.startTime ? new Date(dto.startTime) : entity.startTime;
+    const nextStartTime = dto.startTime
+      ? new Date(dto.startTime)
+      : entity.startTime;
     const nextEndTime = dto.endTime ? new Date(dto.endTime) : entity.endTime;
     this.assertTimeRange(nextStartTime, nextEndTime);
 
@@ -147,7 +151,7 @@ export class TrainingSessionsService {
 
     const tasks = await this.sessionContentsRepository.find({
       where: { sessionId: session.id, tenantId: session.tenantId },
-      order: { order: 'ASC', createdAt: 'ASC' },
+      order: { createdAt: 'ASC' },
     });
 
     const exercisesByTask = await Promise.all(
@@ -159,14 +163,16 @@ export class TrainingSessionsService {
             tenantId: session.tenantId,
             selected: true,
           },
-          order: { order: 'ASC', createdAt: 'ASC' },
+          order: { createdAt: 'ASC' },
         });
 
         const exerciseIds = rows.map((row) => row.exerciseId);
         const exercises = exerciseIds.length
           ? await this.exercisesRepository.findBy({ id: In(exerciseIds) })
           : [];
-        const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]));
+        const byId = new Map(
+          exercises.map((exercise) => [exercise.id, exercise]),
+        );
 
         return {
           task,
@@ -178,105 +184,613 @@ export class TrainingSessionsService {
       }),
     );
 
-    const contentIds = tasks
-      .map((task) => task.trainingContentId)
-      .filter((id): id is string => Boolean(id));
-    const trainingContents = contentIds.length
-      ? await this.trainingContentsRepository.findBy({ id: In(contentIds) })
-      : [];
-    const contentById = new Map(trainingContents.map((content) => [content.id, content]));
-
     const pdf = await PDFDocument.create();
     let page = pdf.addPage([595, 842]);
     const titleFont = await pdf.embedFont(StandardFonts.HelveticaBold);
     const bodyFont = await pdf.embedFont(StandardFonts.Helvetica);
+    const pageWidth = 595;
+    const pageHeight = 842;
+    const marginX = 36;
+    const gutter = 14;
+    const contentWidth = pageWidth - marginX * 2;
+    const sectionGapY = 14;
+    const cardBottomLimit = 48;
 
-    let y = 800;
-    const ensureSpace = () => {
-      if (y >= 120) return;
+    // Color palette from GKX theme
+    const primaryColor = rgb(0.78, 0.97, 0.01); // #c7f703
+    const primaryDark = rgb(0.76, 0.85, 0.29); // #c3da4b
+    const darkText = rgb(0.09, 0.12, 0.18); // #1a1c2e
+    const mediumText = rgb(0.2, 0.24, 0.29); // #343d4a
+    const lightBg = rgb(0.96, 0.96, 0.96); // #f5f5f5
+    const borderColor = rgb(0.9, 0.91, 0.92); // #e5e7eb
+    const whiteText = rgb(0.97, 0.98, 0.99);
+
+    const friendlyDate = this.formatFriendlyDate(session.date);
+    const friendlyStartTime = this.formatFriendlyTime(session.startTime);
+    const friendlyEndTime = this.formatFriendlyTime(session.endTime);
+    const sessionDuration = this.formatSessionDuration(
+      session.startTime,
+      session.endTime,
+    );
+
+    let y = 0;
+    const resetPage = () => {
       page = pdf.addPage([595, 842]);
-      y = 800;
+      y = 786;
     };
 
-    page.drawText(`Hoja de campo: ${session.title}`, {
-      x: 40,
-      y,
+    const headerHeight = 92;
+
+    // Premium header with dark background and accent stripe
+    page.drawRectangle({
+      x: 0,
+      y: pageHeight - headerHeight,
+      width: pageWidth,
+      height: headerHeight,
+      color: darkText,
+      borderColor: darkText,
+      borderWidth: 1,
+    });
+
+    page.drawRectangle({
+      x: 0,
+      y: pageHeight - 4,
+      width: pageWidth,
+      height: 4,
+      color: primaryColor,
+    });
+
+    page.drawText(`Sesión: ${session.title}`, {
+      x: marginX + 14,
+      y: pageHeight - 32,
       size: 18,
       font: titleFont,
-      color: rgb(0.1, 0.1, 0.1),
+      color: whiteText,
     });
-    y -= 24;
-    page.drawText(`Fecha: ${session.date} | Horario: ${session.startTime.toISOString()} - ${session.endTime.toISOString()}`, {
-      x: 40,
-      y,
+
+    page.drawText(`Fecha: ${friendlyDate}`, {
+      x: marginX + 14,
+      y: pageHeight - 54,
       size: 10,
       font: bodyFont,
-      color: rgb(0.2, 0.2, 0.2),
+      color: whiteText,
     });
-    y -= 14;
-    page.drawText(`Ubicacion: ${session.location ?? 'No definida'} | Estado: ${session.status}`, {
-      x: 40,
-      y,
+
+    page.drawText(
+      `Horario: ${friendlyStartTime} - ${friendlyEndTime} (${sessionDuration})`,
+      {
+        x: marginX + 14,
+        y: pageHeight - 68,
+        size: 10,
+        font: bodyFont,
+        color: whiteText,
+      },
+    );
+
+    const rightMeta = `Ubicación: ${session.location ?? 'No definida'} | Tareas: ${exercisesByTask.length}`;
+    page.drawText(this.truncateText(rightMeta, bodyFont, 10, 250), {
+      x: pageWidth - marginX - 264,
+      y: pageHeight - 54,
       size: 10,
       font: bodyFont,
-      color: rgb(0.2, 0.2, 0.2),
+      color: whiteText,
     });
-    y -= 20;
+
+    y = pageHeight - headerHeight - 12;
+
+    const hasDescription = Boolean(session.description?.trim());
+    const hasNotes = Boolean(session.notes?.trim());
+    if (hasDescription || hasNotes) {
+      const descLines = hasDescription
+        ? this.wrapText(
+            session.description ?? '',
+            bodyFont,
+            9,
+            contentWidth - 24,
+          ).slice(0, 2)
+        : [];
+      const notesLines = hasNotes
+        ? this.wrapText(
+            session.notes ?? '',
+            bodyFont,
+            9,
+            contentWidth - 24,
+          ).slice(0, 2)
+        : [];
+
+      const summaryLinesCount =
+        (hasDescription ? 1 + descLines.length : 0) +
+        (hasNotes ? 1 + notesLines.length : 0);
+      const summaryHeight = 18 + summaryLinesCount * 11;
+
+      page.drawRectangle({
+        x: marginX,
+        y: y - summaryHeight,
+        width: contentWidth,
+        height: summaryHeight,
+        color: rgb(1, 1, 1),
+        borderColor,
+        borderWidth: 1,
+      });
+
+      page.drawRectangle({
+        x: marginX,
+        y: y - summaryHeight,
+        width: 4,
+        height: summaryHeight,
+        color: primaryDark,
+      });
+
+      let summaryY = y - 16;
+      if (hasDescription) {
+        page.drawText('Descripción', {
+          x: marginX + 10,
+          y: summaryY,
+          size: 9,
+          font: titleFont,
+          color: darkText,
+        });
+        summaryY -= 11;
+        for (const line of descLines) {
+          page.drawText(line, {
+            x: marginX + 10,
+            y: summaryY,
+            size: 9,
+            font: bodyFont,
+            color: mediumText,
+          });
+          summaryY -= 11;
+        }
+      }
+
+      if (hasNotes) {
+        page.drawText('Notas', {
+          x: marginX + 10,
+          y: summaryY,
+          size: 9,
+          font: titleFont,
+          color: darkText,
+        });
+        summaryY -= 11;
+        for (const line of notesLines) {
+          page.drawText(line, {
+            x: marginX + 10,
+            y: summaryY,
+            size: 9,
+            font: bodyFont,
+            color: mediumText,
+          });
+          summaryY -= 11;
+        }
+      }
+
+      y -= summaryHeight + 10;
+    }
 
     for (const taskGroup of exercisesByTask) {
-      ensureSpace();
+      const hasMultipleExercises = taskGroup.exercises.length > 1;
+      const exerciseColumns = hasMultipleExercises ? 2 : 1;
+      const exerciseCardWidth =
+        exerciseColumns === 2 ? (contentWidth - gutter) / 2 : contentWidth;
+      const previewHeight = exerciseColumns === 2 ? 172 : 260;
+      const exerciseCardHeight = previewHeight + 40;
+      const minTaskHeaderHeight = 52;
 
-      const contentName = taskGroup.task.trainingContentId
-        ? (contentById.get(taskGroup.task.trainingContentId)?.name ?? 'Contenido no encontrado')
-        : 'Sin contenido asociado';
+      if (
+        y - (minTaskHeaderHeight + exerciseCardHeight + 10) <
+        cardBottomLimit
+      ) {
+        resetPage();
+      }
 
-      page.drawText(`Tarea: ${taskGroup.task.taskName}`, {
-        x: 40,
-        y,
-        size: 12,
-        font: titleFont,
+      // Task section card
+      page.drawRectangle({
+        x: marginX,
+        y: y - minTaskHeaderHeight,
+        width: contentWidth,
+        height: minTaskHeaderHeight,
+        color: rgb(1, 1, 1),
+        borderColor,
+        borderWidth: 1,
       });
-      y -= 14;
-      page.drawText(`Contenido: ${contentName} | Duracion: ${taskGroup.task.customDurationMinutes ?? '-'} min`, {
-        x: 48,
-        y,
-        size: 9,
-        font: bodyFont,
-      });
-      y -= 12;
 
-      if (taskGroup.task.notes) {
-        page.drawText(`Notas: ${taskGroup.task.notes}`, {
-          x: 48,
+      page.drawRectangle({
+        x: marginX,
+        y: y - minTaskHeaderHeight,
+        width: 5,
+        height: minTaskHeaderHeight,
+        color: primaryColor,
+      });
+
+      page.drawText(
+        this.truncateText(
+          `Tarea: ${taskGroup.task.taskName}`,
+          titleFont,
+          12,
+          contentWidth - 20,
+        ),
+        {
+          x: marginX + 10,
+          y: y - 18,
+          size: 12,
+          font: titleFont,
+          color: darkText,
+        },
+      );
+
+      page.drawText(
+        this.truncateText(
+          `${taskGroup.exercises.length} ${taskGroup.exercises.length === 1 ? 'ejercicio' : 'ejercicios'}`,
+          bodyFont,
+          9,
+          contentWidth - 20,
+        ),
+        {
+          x: marginX + 10,
+          y: y - 34,
+          size: 9,
+          font: bodyFont,
+          color: primaryDark,
+        },
+      );
+
+      y -= minTaskHeaderHeight + 6;
+
+      if (!taskGroup.exercises.length) {
+        if (y - 26 < cardBottomLimit) {
+          resetPage();
+        }
+        page.drawText('Sin ejercicios seleccionados para esta tarea.', {
+          x: marginX + 4,
           y,
           size: 9,
           font: bodyFont,
+          color: mediumText,
         });
-        y -= 12;
+        y -= 26;
+        y -= sectionGapY;
+        continue;
       }
 
-      for (const row of taskGroup.exercises) {
-        const exerciseName = row.exercise?.name ?? 'Ejercicio no encontrado';
-        const preview = row.assignment.tacticalPreviewUrlSnapshot ?? 'sin preview';
-        page.drawText(
-          `- ${exerciseName} | rep: ${row.assignment.customRepetitions ?? row.exercise?.repetitions ?? '-'} | dur: ${row.assignment.customDurationMinutes ?? row.exercise?.durationMinutes ?? '-'} min | preview: ${preview}`,
-          {
-            x: 56,
-            y,
-            size: 8,
-            font: bodyFont,
-          },
-        );
-        y -= 10;
-        ensureSpace();
+      for (
+        let index = 0;
+        index < taskGroup.exercises.length;
+        index += exerciseColumns
+      ) {
+        if (y - exerciseCardHeight < cardBottomLimit) {
+          resetPage();
+          page.drawText(
+            this.truncateText(
+              `Tarea (continuación): ${taskGroup.task.taskName}`,
+              titleFont,
+              11,
+              contentWidth,
+            ),
+            {
+              x: marginX,
+              y,
+              size: 11,
+              font: titleFont,
+              color: darkText,
+            },
+          );
+          y -= 16;
+        }
+
+        const left = taskGroup.exercises[index];
+        await this.drawExerciseCard({
+          pdf,
+          page,
+          titleFont,
+          bodyFont,
+          x: marginX,
+          topY: y,
+          width: exerciseCardWidth,
+          height: exerciseCardHeight,
+          previewHeight,
+          row: left,
+          primaryColor,
+          darkText,
+          mediumText,
+          lightBg,
+          borderColor,
+        });
+
+        const right = taskGroup.exercises[index + 1];
+        if (exerciseColumns === 2 && right) {
+          await this.drawExerciseCard({
+            pdf,
+            page,
+            titleFont,
+            bodyFont,
+            x: marginX + exerciseCardWidth + gutter,
+            topY: y,
+            width: exerciseCardWidth,
+            height: exerciseCardHeight,
+            previewHeight,
+            row: right,
+            primaryColor,
+            darkText,
+            mediumText,
+            lightBg,
+            borderColor,
+          });
+        }
+
+        y -= exerciseCardHeight + 4;
       }
 
-      y -= 8;
+      y -= 2;
     }
 
     const bytes = await pdf.save();
     const filename = `field-sheet-${session.date}-${session.id}.pdf`;
     return { bytes: Buffer.from(bytes), filename };
+  }
+
+  private async drawExerciseCard(params: {
+    pdf: PDFDocument;
+    page: PDFPage;
+    titleFont: PDFFont;
+    bodyFont: PDFFont;
+    x: number;
+    topY: number;
+    width: number;
+    height: number;
+    previewHeight: number;
+    row: {
+      assignment: SessionExerciseEntity;
+      exercise: ExerciseEntity | null;
+    };
+    primaryColor: ReturnType<typeof rgb>;
+    darkText: ReturnType<typeof rgb>;
+    mediumText: ReturnType<typeof rgb>;
+    lightBg: ReturnType<typeof rgb>;
+    borderColor: ReturnType<typeof rgb>;
+  }) {
+    const {
+      pdf,
+      page,
+      titleFont,
+      bodyFont,
+      x,
+      topY,
+      width,
+      height,
+      previewHeight,
+      row,
+      primaryColor,
+      darkText,
+      mediumText,
+      lightBg,
+      borderColor,
+    } = params;
+
+    const exerciseName = row.exercise?.name ?? 'Ejercicio no encontrado';
+    const reps = row.exercise?.repetitions ?? '-';
+    const duration = row.exercise?.durationMinutes ?? '-';
+
+    const cardBottomY = topY - height;
+    const padding = 8;
+
+    page.drawRectangle({
+      x,
+      y: cardBottomY,
+      width,
+      height,
+      color: rgb(1, 1, 1),
+      borderColor,
+      borderWidth: 1,
+    });
+
+    page.drawRectangle({
+      x,
+      y: topY - 2,
+      width,
+      height: 2,
+      color: primaryColor,
+    });
+
+    page.drawText(
+      this.truncateText(exerciseName, titleFont, 10, width - padding * 2),
+      {
+        x: x + padding,
+        y: topY - 16,
+        size: 10,
+        font: titleFont,
+        color: darkText,
+      },
+    );
+
+    page.drawText(`Rep: ${reps} | Duración: ${duration} min`, {
+      x: x + padding,
+      y: topY - 30,
+      size: 8,
+      font: bodyFont,
+      color: mediumText,
+    });
+
+    const previewBoxX = x + padding;
+    const previewBoxY = topY - 34 - previewHeight;
+    const previewBoxWidth = width - padding * 2;
+    const previewBoxHeight = previewHeight;
+
+    page.drawRectangle({
+      x: previewBoxX,
+      y: previewBoxY,
+      width: previewBoxWidth,
+      height: previewBoxHeight,
+      color: lightBg,
+      borderColor,
+      borderWidth: 0.5,
+    });
+
+    const previewUrl = row.assignment.tacticalPreviewUrlSnapshot;
+
+    if (previewUrl) {
+      const embeddedPreview = await this.embedTacticalPreview(pdf, previewUrl);
+      if (embeddedPreview) {
+        const ratio = embeddedPreview.height / embeddedPreview.width;
+        const availableWidth = previewBoxWidth;
+        const availableHeight = previewBoxHeight;
+        let renderWidth = availableWidth;
+        let renderHeight = renderWidth * ratio;
+        if (renderHeight > availableHeight) {
+          renderHeight = availableHeight;
+          renderWidth = renderHeight / ratio;
+        }
+
+        page.drawImage(embeddedPreview.image, {
+          x: previewBoxX + (previewBoxWidth - renderWidth) / 2,
+          y: previewBoxY + (previewBoxHeight - renderHeight) / 2,
+          width: renderWidth,
+          height: renderHeight,
+        });
+      } else {
+        page.drawText('Preview no compatible', {
+          x: previewBoxX + 10,
+          y: previewBoxY + previewBoxHeight / 2,
+          size: 9,
+          font: bodyFont,
+          color: mediumText,
+        });
+      }
+    } else {
+      page.drawText('Sin preview', {
+        x: previewBoxX + 10,
+        y: previewBoxY + previewBoxHeight / 2,
+        size: 10,
+        font: bodyFont,
+        color: mediumText,
+      });
+    }
+  }
+
+  private formatFriendlyDate(rawDate: string) {
+    const value = new Date(`${rawDate}T00:00:00`);
+    if (Number.isNaN(value.getTime())) return rawDate;
+
+    return new Intl.DateTimeFormat('es-ES', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(value);
+  }
+
+  private formatFriendlyTime(value: Date) {
+    return new Intl.DateTimeFormat('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    }).format(value);
+  }
+
+  private formatSessionDuration(start: Date, end: Date) {
+    const diffMs = Math.max(0, end.getTime() - start.getTime());
+    const minutes = Math.round(diffMs / 60000);
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+
+    if (hours <= 0) return `${rest} min`;
+    if (rest <= 0) return `${hours} h`;
+    return `${hours} h ${rest} min`;
+  }
+
+  private truncateText(
+    text: string,
+    font: PDFFont,
+    size: number,
+    maxWidth: number,
+  ) {
+    if (font.widthOfTextAtSize(text, size) <= maxWidth) return text;
+
+    const ellipsis = '...';
+    let value = text;
+    while (value.length > 0) {
+      value = value.slice(0, -1);
+      const candidate = `${value}${ellipsis}`;
+      if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
+        return candidate;
+      }
+    }
+
+    return ellipsis;
+  }
+
+  private wrapText(
+    text: string,
+    font: PDFFont,
+    size: number,
+    maxWidth: number,
+  ) {
+    const words = text.split(/\s+/).filter(Boolean);
+    const lines: string[] = [];
+    let current = '';
+
+    for (const word of words) {
+      const candidate = current ? `${current} ${word}` : word;
+      if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
+        current = candidate;
+      } else {
+        if (current) lines.push(current);
+        current = word;
+      }
+    }
+
+    if (current) lines.push(current);
+    return lines;
+  }
+
+  private async embedTacticalPreview(pdf: PDFDocument, previewUrl: string) {
+    const bytes = await this.loadPreviewBytes(previewUrl);
+    if (!bytes) return null;
+
+    if (this.isPng(bytes)) {
+      const image = await pdf.embedPng(bytes);
+      return { image, width: image.width, height: image.height };
+    }
+
+    if (this.isJpeg(bytes)) {
+      const image = await pdf.embedJpg(bytes);
+      return { image, width: image.width, height: image.height };
+    }
+
+    return null;
+  }
+
+  private async loadPreviewBytes(previewUrl: string) {
+    try {
+      if (previewUrl.startsWith('/uploads/')) {
+        const localPath = resolve(
+          process.cwd(),
+          process.env.LOCAL_UPLOADS_DIR ?? 'uploads',
+          previewUrl.replace('/uploads/', ''),
+        );
+        const file = await readFile(localPath);
+        return Uint8Array.from(file);
+      }
+
+      const response = await fetch(previewUrl);
+      if (!response.ok) return null;
+      const arrayBuffer = await response.arrayBuffer();
+      return new Uint8Array(arrayBuffer);
+    } catch {
+      return null;
+    }
+  }
+
+  private isPng(bytes: Uint8Array) {
+    return (
+      bytes.length > 8 &&
+      bytes[0] === 0x89 &&
+      bytes[1] === 0x50 &&
+      bytes[2] === 0x4e &&
+      bytes[3] === 0x47
+    );
+  }
+
+  private isJpeg(bytes: Uint8Array) {
+    return bytes.length > 3 && bytes[0] === 0xff && bytes[1] === 0xd8;
   }
 
   private resolveTenantIdForCreate(
@@ -297,7 +811,10 @@ export class TrainingSessionsService {
     actor: AuthenticatedUser,
   ) {
     if (actor.role === Role.SUPER_ADMIN) return;
-    if (session.tenantId !== actor.tenantId || session.createdByUserId !== actor.userId) {
+    if (
+      session.tenantId !== actor.tenantId ||
+      session.createdByUserId !== actor.userId
+    ) {
       throw new ForbiddenException(
         'You can only access your own training sessions',
       );
@@ -311,13 +828,18 @@ export class TrainingSessionsService {
   }
 
   private async ensureTenantExists(tenantId: string) {
-    const tenant = await this.tenantsRepository.findOne({ where: { id: tenantId } });
+    const tenant = await this.tenantsRepository.findOne({
+      where: { id: tenantId },
+    });
     if (!tenant) {
       throw new NotFoundException('Tenant not found');
     }
   }
 
-  private async ensureTeamBelongsToTenant(teamId: string | undefined, tenantId: string) {
+  private async ensureTeamBelongsToTenant(
+    teamId: string | undefined,
+    tenantId: string,
+  ) {
     if (!teamId) return;
 
     const team = await this.teamsRepository.findOne({ where: { id: teamId } });
@@ -326,7 +848,9 @@ export class TrainingSessionsService {
     }
 
     if (team.tenantId !== tenantId) {
-      throw new BadRequestException('Team does not belong to the provided tenant');
+      throw new BadRequestException(
+        'Team does not belong to the provided tenant',
+      );
     }
   }
 
@@ -347,7 +871,9 @@ export class TrainingSessionsService {
     });
 
     if (contents.length !== uniqueIds.length) {
-      throw new NotFoundException('One or more training contents were not found');
+      throw new NotFoundException(
+        'One or more training contents were not found',
+      );
     }
 
     for (const content of contents) {

@@ -61,8 +61,6 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
 
   const [activeTab, setActiveTab] = useState<Tab>("info");
   const [taskName, setTaskName] = useState("");
-  const [taskDuration, setTaskDuration] = useState("");
-  const [taskNotes, setTaskNotes] = useState("");
   const [exerciseTaskId, setExerciseTaskId] = useState("");
   const [exerciseContentId, setExerciseContentId] = useState("");
   const [exerciseId, setExerciseId] = useState("");
@@ -72,6 +70,7 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
   const [editStartTime, setEditStartTime] = useState("");
   const [editEndTime, setEditEndTime] = useState("");
   const [editLocation, setEditLocation] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editStatus, setEditStatus] = useState<"DRAFT" | "PLANNED" | "COMPLETED" | "CANCELLED">("DRAFT");
   const [editContentIds, setEditContentIds] = useState<string[]>([]);
@@ -137,8 +136,6 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
         tenantId,
         sessionId: id,
         taskName,
-        notes: taskNotes || undefined,
-        customDurationMinutes: taskDuration ? Number(taskDuration) : undefined,
       }),
       {
         loading: { title: "Creando tarea" },
@@ -151,8 +148,6 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
     );
 
     setTaskName("");
-    setTaskDuration("");
-    setTaskNotes("");
   };
 
   const onAssignExercise = async (event: FormEvent) => {
@@ -229,6 +224,7 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
     setEditStartTime(toDateTimeLocalValue(session.startTime));
     setEditEndTime(toDateTimeLocalValue(session.endTime));
     setEditLocation(session.location ?? "");
+    setEditDescription(session.description ?? "");
     setEditNotes(session.notes ?? "");
     setEditStatus(session.status ?? "DRAFT");
     setEditContentIds(session.trainingContentIds ?? []);
@@ -268,6 +264,7 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
         payload: {
           title: editTitle,
           trainingContentIds: editContentIds,
+          description: editDescription || undefined,
           date: editDate,
           startTime: new Date(editStartTime).toISOString(),
           endTime: new Date(editEndTime).toISOString(),
@@ -517,6 +514,15 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
                   </select>
                 </label>
                 <label className={`${labelClass} sm:col-span-2`}>
+                  <span className={labelTextClass}>Descripción</span>
+                  <textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    className={inputClass}
+                    rows={3}
+                  />
+                </label>
+                <label className={`${labelClass} sm:col-span-2`}>
                   <span className={labelTextClass}>Notas</span>
                   <input
                     value={editNotes}
@@ -571,8 +577,12 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
                     {statusInfo.label}
                   </span>
                 </dd>
-              </div>
-              <div>
+              </div>              {session.description ? (
+                <div className="sm:col-span-2">
+                  <dt className="text-xs font-medium text-muted-foreground">Descripción</dt>
+                  <dd className="mt-0.5 text-sm text-foreground whitespace-pre-wrap">{session.description}</dd>
+                </div>
+              ) : null}              <div>
                 <dt className="text-xs font-medium text-muted-foreground">Tareas planificadas</dt>
                 <dd className="mt-0.5 text-sm text-foreground">
                   {tasks.length} {tasks.length === 1 ? "tarea" : "tareas"}
@@ -614,7 +624,7 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
               Las tareas organizan los ejercicios de la sesión (ej: Calentamiento, Bloque técnico, Vuelta a la calma).
             </p>
             <form onSubmit={onCreateTask} className="mt-4 space-y-4">
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4">
                 <label className={labelClass}>
                   <span className={labelTextClass}>
                     Nombre de la tarea <span className="text-red-500" aria-label="obligatorio">*</span>
@@ -623,26 +633,6 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
                     value={taskName}
                     onChange={(e) => setTaskName(e.target.value)}
                     placeholder="Ej: Calentamiento"
-                    className={inputClass}
-                  />
-                </label>
-                <label className={labelClass}>
-                  <span className={labelTextClass}>Duración (minutos)</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={taskDuration}
-                    onChange={(e) => setTaskDuration(e.target.value)}
-                    placeholder="Ej: 20"
-                    className={inputClass}
-                  />
-                </label>
-                <label className={labelClass}>
-                  <span className={labelTextClass}>Notas</span>
-                  <input
-                    value={taskNotes}
-                    onChange={(e) => setTaskNotes(e.target.value)}
-                    placeholder="Ej: Enfocarse en velocidad de reacción"
                     className={inputClass}
                   />
                 </label>
@@ -669,7 +659,6 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
             ) : (
               <ul className="mt-4 space-y-2">
                 {tasks.map((task, idx) => {
-                  const contentName = contentById.get(task.trainingContentId ?? "")?.name;
                   return (
                     <li
                       key={task.id}
@@ -681,10 +670,6 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
                         </span>
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-foreground">{task.taskName}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {task.customDurationMinutes ? `${task.customDurationMinutes} min` : "Sin duración"}
-                            {contentName ? ` · ${contentName}` : ""}
-                          </p>
                         </div>
                       </div>
                       <button
@@ -831,7 +816,6 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
               <div className="mt-4 space-y-3">
                 {tasks.map((task, idx) => {
                   const taskExercises = exercisesByTask.get(task.id) ?? [];
-                  const contentName = contentById.get(task.trainingContentId ?? "")?.name;
 
                   return (
                     <div key={task.id} className="rounded-lg border border-border bg-background">
@@ -843,10 +827,6 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
                           </span>
                           <div>
                             <p className="text-sm font-semibold text-foreground">{task.taskName}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {task.customDurationMinutes ? `${task.customDurationMinutes} min` : "Sin duración"}
-                              {contentName ? ` · ${contentName}` : ""}
-                            </p>
                           </div>
                         </div>
                         <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">

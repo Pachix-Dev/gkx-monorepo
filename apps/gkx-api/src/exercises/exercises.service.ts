@@ -9,17 +9,23 @@ import { ILike, Repository } from 'typeorm';
 import { createHash } from 'crypto';
 import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../auth/roles.enum';
+import { TacticalPreviewStorageService } from '../common/storage/tactical-preview-storage.service';
 import { TenantEntity } from '../tenants/tenant.entity';
 import { TrainingContentEntity } from '../training-contents/training-content.entity';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
 import { UpdateTacticalDesignDto } from './dto/update-tactical-design.dto';
-import { ExerciseEntity, ExerciseStatus } from './exercise.entity';
+import { ExerciseEntity } from './exercise.entity';
 
 interface ExerciseFilters {
   trainingContentId?: string;
   difficulty?: string;
   search?: string;
+}
+
+interface UploadedTacticalPreview {
+  mimetype: string;
+  buffer: Buffer;
 }
 
 @Injectable()
@@ -31,6 +37,7 @@ export class ExercisesService {
     private readonly tenantsRepository: Repository<TenantEntity>,
     @InjectRepository(TrainingContentEntity)
     private readonly contentsRepository: Repository<TrainingContentEntity>,
+    private readonly tacticalPreviewStorage: TacticalPreviewStorageService,
   ) {}
 
   async create(dto: CreateExerciseDto, actor: AuthenticatedUser) {
@@ -51,8 +58,6 @@ export class ExercisesService {
       equipment: dto.equipment ?? null,
       videoUrl: dto.videoUrl ?? null,
       difficulty: dto.difficulty ?? null,
-      order: dto.order ?? 0,
-      status: dto.status ?? ExerciseStatus.ACTIVE,
     });
 
     return this.exercisesRepository.save(entity);
@@ -114,8 +119,6 @@ export class ExercisesService {
       equipment: dto.equipment ?? entity.equipment,
       videoUrl: dto.videoUrl ?? entity.videoUrl,
       difficulty: dto.difficulty ?? entity.difficulty,
-      order: dto.order ?? entity.order,
-      status: dto.status ?? entity.status,
     });
 
     return this.exercisesRepository.save(entity);
@@ -165,6 +168,35 @@ export class ExercisesService {
       stateVersion: entity.tacticalStateVersion,
       previewUrl: entity.tacticalPreviewUrl,
       updatedAt: entity.tacticalUpdatedAt?.toISOString(),
+    };
+  }
+
+  async updateTacticalPreview(
+    id: string,
+    file: UploadedTacticalPreview,
+    actor: AuthenticatedUser,
+  ) {
+    const entity = await this.findOne(id, actor);
+    const previewUrl = await this.tacticalPreviewStorage.saveTacticalPreview({
+      tenantId: entity.tenantId,
+      exerciseId: entity.id,
+      mimeType: file.mimetype,
+      buffer: file.buffer,
+    });
+
+    Object.assign(entity, {
+      tacticalPreviewUrl: previewUrl,
+      tacticalUpdatedAt: new Date(),
+    });
+
+    await this.exercisesRepository.save(entity);
+
+    return {
+      exerciseId: entity.id,
+      state: entity.tacticalState ?? null,
+      stateVersion: entity.tacticalStateVersion ?? 1,
+      previewUrl: entity.tacticalPreviewUrl,
+      updatedAt: entity.tacticalUpdatedAt?.toISOString() ?? entity.updatedAt?.toISOString(),
     };
   }
 
