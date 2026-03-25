@@ -17,7 +17,12 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/data-source.ts",
+    "stripe:webhook:listen": "powershell -ExecutionPolicy Bypass -File ./scripts/stripe-webhook-listen.ps1",
+    "stripe:webhook:trigger": "powershell -ExecutionPolicy Bypass -File ./scripts/stripe-webhook-trigger.ps1"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -39,6 +44,7 @@
     "reflect-metadata": "^0.2.2",
     "resend": "^6.9.3",
     "rxjs": "^7.8.1",
+    "stripe": "^18.3.0",
     "typeorm": "^0.3.28",
     "uuid": "^13.0.0"
   },

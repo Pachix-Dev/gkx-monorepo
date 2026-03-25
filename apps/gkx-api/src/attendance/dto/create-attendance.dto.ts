@@ -9,7 +9,7 @@ export class CreateAttendanceDto {
 
   @ApiProperty({ format: 'uuid' })
   @IsUUID()
-  sessionId!: string;
+  trainingSessionId!: string;
 
   @ApiProperty({ format: 'uuid' })
   @IsUUID()
@@ -23,5 +23,5 @@ export class CreateAttendanceDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  comment?: string;
+  notes?: string;
 }

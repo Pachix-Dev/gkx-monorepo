@@ -14,6 +14,7 @@ import { TenantEntity } from '../tenants/tenant.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserEntity, UserStatus } from './user.entity';
+import { PlanLimitsService } from '../plan-limits/plan-limits.service';
 
 @Injectable()
 export class UsersService {
@@ -22,6 +23,7 @@ export class UsersService {
     private readonly usersRepository: Repository<UserEntity>,
     @InjectRepository(TenantEntity)
     private readonly tenantsRepository: Repository<TenantEntity>,
+    private readonly planLimitsService: PlanLimitsService,
   ) {}
 
   async create(dto: CreateUserDto, actor: AuthenticatedUser) {
@@ -34,6 +36,7 @@ export class UsersService {
     const tenantId = this.resolveTenantIdForCreate(dto.tenantId, actor);
 
     await this.ensureTenantExists(tenantId);
+    await this.planLimitsService.assertWithinLimit(tenantId, 'users');
 
     const email = dto.email.toLowerCase();
     const existing = await this.usersRepository.findOne({ where: { email } });

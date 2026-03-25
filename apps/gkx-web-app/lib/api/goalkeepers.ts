@@ -5,6 +5,8 @@ export type GoalkeeperEntity = {
   id: string;
   tenantId: string;
   userId: string;
+  name?: string | null;
+  avatarUrl?: string | null;
   dateOfBirth?: string | null;
   dominantHand?: string | null;
   dominantFoot?: string | null;
@@ -19,7 +21,7 @@ export type GoalkeeperEntity = {
 
 export type CreateGoalkeeperInput = {
   tenantId: string;
-  userId: string;
+  name: string;
   dateOfBirth?: string;
   dominantHand?: string;
   dominantFoot?: string;
@@ -67,4 +69,17 @@ export async function deleteGoalkeeper(id: string) {
     method: "DELETE",
     auth: true,
   });
+}
+
+export async function uploadGoalkeeperAvatar(id: string, file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const payload = await apiRequest<unknown>(`/goalkeepers/${id}/avatar`, {
+    method: "POST",
+    auth: true,
+    body: formData,
+  });
+
+  return extractData<GoalkeeperEntity>(payload);
 }

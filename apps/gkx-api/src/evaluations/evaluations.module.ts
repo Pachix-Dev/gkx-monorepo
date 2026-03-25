@@ -2,8 +2,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { GoalkeeperEntity } from '../goalkeepers/goalkeeper.entity';
 import { TenantEntity } from '../tenants/tenant.entity';
-import { UserEntity } from '../users/user.entity';
+import { TrainingSessionEntity } from '../training-sessions/training-session.entity';
 import { EvaluationEntity } from './evaluation.entity';
+import { EvaluationItemEntity } from './evaluation-item.entity';
 import { EvaluationsController } from './evaluations.controller';
 import { EvaluationsService } from './evaluations.service';
 
@@ -11,9 +12,10 @@ import { EvaluationsService } from './evaluations.service';
   imports: [
     TypeOrmModule.forFeature([
       EvaluationEntity,
+      EvaluationItemEntity,
       TenantEntity,
       GoalkeeperEntity,
-      UserEntity,
+      TrainingSessionEntity,
     ]),
   ],
   controllers: [EvaluationsController],

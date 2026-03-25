@@ -7,7 +7,14 @@ import { EmailActionTokenEntity } from './auth/entities/email-action-token.entit
 import { AttendanceEntity } from './attendance/attendance.entity';
 import { AttendanceModule } from './attendance/attendance.module';
 import { EvaluationEntity } from './evaluations/evaluation.entity';
+import { EvaluationItemEntity } from './evaluations/evaluation-item.entity';
 import { EvaluationsModule } from './evaluations/evaluations.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { PlanLimitsModule } from './plan-limits/plan-limits.module';
+import { ReportsModule } from './reports/reports.module';
+import { PlanChangeRequestEntity } from './subscriptions/plan-change-request.entity';
+import { SubscriptionEntity } from './subscriptions/subscription.entity';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { GoalkeeperEntity } from './goalkeepers/goalkeeper.entity';
 import { GoalkeepersModule } from './goalkeepers/goalkeepers.module';
 import { SessionContentEntity } from './session-contents/session-content.entity';
@@ -57,8 +64,11 @@ import { ConfigModule } from '@nestjs/config';
         SessionExerciseEntity,
         AttendanceEntity,
         EvaluationEntity,
+        EvaluationItemEntity,
+        SubscriptionEntity,
+        PlanChangeRequestEntity,
       ],
-      synchronize: (process.env.DB_SYNC ?? 'true') === 'true',
+      synchronize: (process.env.DB_SYNC ?? 'false') === 'true',
     }),
     AuthModule,
     UsersModule,
@@ -73,6 +83,10 @@ import { ConfigModule } from '@nestjs/config';
     SessionExercisesModule,
     AttendanceModule,
     EvaluationsModule,
+    PlanLimitsModule,
+    SubscriptionsModule,
+    DashboardModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [],

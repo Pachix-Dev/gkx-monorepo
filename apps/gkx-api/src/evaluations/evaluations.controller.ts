@@ -69,6 +69,26 @@ export class EvaluationsController {
     return { success: true, message: 'Evaluations retrieved successfully', data };
   }
 
+  @Get('session/:sessionId')
+  @Roles(
+    Role.SUPER_ADMIN, Role.USER,
+  )
+  @ApiOperation({ summary: 'Listar evaluaciones por sesion' })
+  @ApiUuidParam('sessionId', 'Identificador de la sesion')
+  @ApiTypedSuccessResponse({
+    message: 'Session evaluations retrieved successfully',
+    isArray: true,
+    model: EvaluationModel,
+  })
+  @ApiCommonErrorResponses()
+  async findBySession(
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.evaluationsService.findBySession(sessionId, user);
+    return { success: true, message: 'Session evaluations retrieved successfully', data };
+  }
+
   @Get(':id')
   @Roles(
     Role.SUPER_ADMIN, Role.USER,

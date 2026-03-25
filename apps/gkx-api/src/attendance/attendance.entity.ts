@@ -5,11 +5,13 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 import { GoalkeeperEntity } from '../goalkeepers/goalkeeper.entity';
 import { TenantEntity } from '../tenants/tenant.entity';
 import { TrainingSessionEntity } from '../training-sessions/training-session.entity';
+import { UserEntity } from '../users/user.entity';
 
 export enum AttendanceStatus {
   PRESENT = 'PRESENT',
@@ -18,7 +20,12 @@ export enum AttendanceStatus {
   JUSTIFIED = 'JUSTIFIED',
 }
 
-@Entity({ name: 'attendance' })
+@Entity({ name: 'attendance_records' })
+@Unique('UQ_attendance_records_tenant_session_goalkeeper', [
+  'tenantId',
+  'trainingSessionId',
+  'goalkeeperId',
+])
 export class AttendanceEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -31,11 +38,11 @@ export class AttendanceEntity {
   tenant!: TenantEntity;
 
   @Column({ type: 'uuid' })
-  sessionId!: string;
+  trainingSessionId!: string;
 
   @ManyToOne(() => TrainingSessionEntity, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'sessionId' })
-  session!: TrainingSessionEntity;
+  @JoinColumn({ name: 'trainingSessionId' })
+  trainingSession!: TrainingSessionEntity;
 
   @Column({ type: 'uuid' })
   goalkeeperId!: string;
@@ -44,11 +51,25 @@ export class AttendanceEntity {
   @JoinColumn({ name: 'goalkeeperId' })
   goalkeeper!: GoalkeeperEntity;
 
-  @Column({ type: 'enum', enum: AttendanceStatus, default: AttendanceStatus.PRESENT })
+  @Column({
+    type: 'enum',
+    enum: AttendanceStatus,
+    default: AttendanceStatus.PRESENT,
+  })
   status!: AttendanceStatus;
 
   @Column({ type: 'text', nullable: true })
-  comment!: string | null;
+  notes!: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  recordedByUserId!: string | null;
+
+  @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'recordedByUserId' })
+  recordedByUser!: UserEntity | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  recordedAt!: Date | null;
 
   @CreateDateColumn()
   createdAt!: Date;

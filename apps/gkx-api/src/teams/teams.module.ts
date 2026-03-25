@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { GoalkeeperEntity } from '../goalkeepers/goalkeeper.entity';
+import { PlanLimitsModule } from '../plan-limits/plan-limits.module';
 import { TenantEntity } from '../tenants/tenant.entity';
 import { UserEntity } from '../users/user.entity';
 import { TeamEntity } from './team.entity';
@@ -15,6 +16,7 @@ import { TeamsService } from './teams.service';
       UserEntity,
       GoalkeeperEntity,
     ]),
+    PlanLimitsModule,
   ],
   controllers: [TeamsController],
   providers: [TeamsService],

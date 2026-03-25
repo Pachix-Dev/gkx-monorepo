@@ -1,7 +1,9 @@
 "use client";
 
 import { useAuth } from "@/features/auth/use-auth";
+import { SessionAttendancePanel } from "@/features/attendance/components/session-attendance-panel";
 import { useExercisesQuery } from "@/features/exercises/hooks/use-exercises";
+import { SessionEvaluationsPanel } from "@/features/evaluations/components/session-evaluations-panel";
 import {
   useCreateSessionExerciseMutation,
   useCreateSessionTaskMutation,
@@ -14,6 +16,7 @@ import {
   useUpdateTrainingSessionMutation,
 } from "@/features/training-sessions/hooks/use-training-sessions";
 import { useTrainingContentsQuery } from "@/features/training-contents/hooks/use-training-contents";
+import { useTeamsQuery } from "@/features/teams/hooks/use-teams";
 import { getAccessToken } from "@/lib/auth/token-storage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -25,7 +28,7 @@ import { sileo } from "sileo";
 // - rerender-memo: memoize all derived state
 // - rendering-conditional-render: ternary instead of &&
 
-type Tab = "info" | "tasks" | "structure";
+type Tab = "info" | "tasks" | "structure" | "attendance" | "evaluations";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -74,11 +77,13 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
   const [editNotes, setEditNotes] = useState("");
   const [editStatus, setEditStatus] = useState<"DRAFT" | "PLANNED" | "COMPLETED" | "CANCELLED">("DRAFT");
   const [editContentIds, setEditContentIds] = useState<string[]>([]);
+  const [editTeamId, setEditTeamId] = useState("");
 
   const sessionQuery = useTrainingSessionQuery(id);
   const tasksQuery = useSessionTasksQuery(id);
   const sessionExercisesQuery = useSessionExercisesQuery(id);
   const contentsQuery = useTrainingContentsQuery({});
+  const teamsQuery = useTeamsQuery();
   const exercisesQuery = useExercisesQuery({});
 
   const deleteSessionMutation = useDeleteTrainingSessionMutation();
@@ -95,6 +100,12 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
   const assignedExercises = useMemo(() => sessionExercisesQuery.data ?? [], [sessionExercisesQuery.data]);
   const contents = useMemo(() => contentsQuery.data ?? [], [contentsQuery.data]);
   const exercises = useMemo(() => exercisesQuery.data ?? [], [exercisesQuery.data]);
+  const teams = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
+  const tenantScopedTeams = useMemo(
+    () => (tenantId ? teams.filter((t) => t.tenantId === tenantId) : teams),
+    [teams, tenantId],
+  );
+  const teamById = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
 
   const assignedContentIds = useMemo(() => session?.trainingContentIds ?? [], [session?.trainingContentIds]);
   const assignedContentIdSet = useMemo(() => new Set(assignedContentIds), [assignedContentIds]);
@@ -228,6 +239,7 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
     setEditNotes(session.notes ?? "");
     setEditStatus(session.status ?? "DRAFT");
     setEditContentIds(session.trainingContentIds ?? []);
+    setEditTeamId(session.teamId ?? "");
     setIsEditingInfo(true);
   };
 
@@ -271,6 +283,7 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
           location: editLocation || undefined,
           notes: editNotes || undefined,
           status: editStatus,
+          teamId: editTeamId || undefined,
         },
       }),
       {
@@ -311,6 +324,8 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
     { id: "info", label: "Información" },
     { id: "tasks", label: `Tareas${tasks.length > 0 ? ` (${tasks.length})` : ""}` },
     { id: "structure", label: "Estructura" },
+    { id: "attendance", label: "Asistencia" },
+    { id: "evaluations", label: "Evaluaciones" },
   ];
 
   return (
@@ -493,6 +508,21 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
                   />
                 </label>
                 <label className={labelClass}>
+                  <span className={labelTextClass}>Equipo</span>
+                  <select
+                    value={editTeamId}
+                    onChange={(e) => setEditTeamId(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">Sin equipo</option>
+                    {tenantScopedTeams.map((team) => (
+                      <option key={team.id} value={team.id}>
+                        {team.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className={labelClass}>
                   <span className={labelTextClass}>Ubicación</span>
                   <input
                     value={editLocation}
@@ -566,6 +596,14 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
                 <div>
                   <dt className="text-xs font-medium text-muted-foreground">Ubicación</dt>
                   <dd className="mt-0.5 text-sm text-foreground">{session.location}</dd>
+                </div>
+              ) : null}
+              {session.teamId ? (
+                <div>
+                  <dt className="text-xs font-medium text-muted-foreground">Equipo</dt>
+                  <dd className="mt-0.5 text-sm text-foreground">
+                    {teamById.get(session.teamId)?.name ?? session.teamId}
+                  </dd>
                 </div>
               ) : null}
               <div>
@@ -689,6 +727,28 @@ export function TrainingSessionDetailClient({ id }: { id: string }) {
               </ul>
             )}
           </div>
+        </div>
+      ) : null}
+
+      {/* Tab: Asistencia */}
+      {activeTab === "attendance" ? (
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <SessionAttendancePanel
+            sessionId={id}
+            tenantId={tenantId}
+            teamId={session.teamId ?? null}
+          />
+        </div>
+      ) : null}
+
+      {/* Tab: Evaluaciones */}
+      {activeTab === "evaluations" ? (
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <SessionEvaluationsPanel
+            sessionId={id}
+            tenantId={tenantId}
+            teamId={session.teamId ?? null}
+          />
         </div>
       ) : null}
 

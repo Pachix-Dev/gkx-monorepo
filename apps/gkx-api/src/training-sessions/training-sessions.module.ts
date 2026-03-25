@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ExerciseEntity } from '../exercises/exercise.entity';
+import { PlanLimitsModule } from '../plan-limits/plan-limits.module';
 import { SessionContentEntity } from '../session-contents/session-content.entity';
 import { SessionExerciseEntity } from '../session-exercises/session-exercise.entity';
 import { TenantEntity } from '../tenants/tenant.entity';
@@ -21,6 +22,7 @@ import { TrainingSessionsService } from './training-sessions.service';
       ExerciseEntity,
       TrainingContentEntity,
     ]),
+    PlanLimitsModule,
   ],
   controllers: [TrainingSessionsController],
   providers: [TrainingSessionsService],

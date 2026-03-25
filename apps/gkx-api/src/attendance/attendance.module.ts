@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { GoalkeeperEntity } from '../goalkeepers/goalkeeper.entity';
 import { TenantEntity } from '../tenants/tenant.entity';
 import { TrainingSessionEntity } from '../training-sessions/training-session.entity';
+import { UserEntity } from '../users/user.entity';
 import { AttendanceController } from './attendance.controller';
 import { AttendanceEntity } from './attendance.entity';
 import { AttendanceService } from './attendance.service';
@@ -14,6 +15,7 @@ import { AttendanceService } from './attendance.service';
       TenantEntity,
       TrainingSessionEntity,
       GoalkeeperEntity,
+      UserEntity,
     ]),
   ],
   controllers: [AttendanceController],

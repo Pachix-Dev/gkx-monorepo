@@ -10,8 +10,6 @@
 - TrainingContents
 - Exercises
 - TrainingSessions
-- SessionContents
-- SessionExercises
 - Attendance
 - Evaluations
 
@@ -40,12 +38,43 @@ con capacidad de:
 
 ---
 
-training lines -> puede tener varios contents
-training contents -> puede tener varios ejercicios
-exercises -> crea el ejercicio y puede mostrar un video url o usar el editor para generar una jugada en el canva
+entidades NestJS modulos pendientes
 
-training session -> crea la información basica del entenamiento y se le asignan los contenidos que tendra esta sesión puede ser mas de uno.
+🧾 Attendance
 
-tareas -> se crea el nombre de la tarea, duraciónm, notas
+attendance_records
+-------------------
+id
+tenant_id
+training_session_id
+goalkeeper_id
+status   // PRESENT | ABSENT | LATE | JUSTIFIED
+notes
+recorded_by_user_id
+recorded_at
+created_at
+updated_at
 
-estructura -> seleccionas la tarea, selecionas alguno de los contenidos filtrados disponibles que estan ligados a la sesion, luego seleccionas el alguno de los ejercicios filtrados de acuerdo al contenido y poder asignar el ejercicio a la tarea
+📊 Evaluations
+
+evaluations
+------------
+id
+tenant_id
+training_session_id
+goalkeeper_id
+evaluated_by_user_id
+evaluation_date
+general_comment
+overall_score
+created_at
+updated_at
+
+evaluation_items
+-----------------
+id
+evaluation_id
+criterion_code
+criterion_label
+score
+comment

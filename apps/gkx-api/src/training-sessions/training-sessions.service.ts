@@ -23,6 +23,7 @@ import {
   TrainingSessionEntity,
   TrainingSessionStatus,
 } from './training-session.entity';
+import { PlanLimitsService } from '../plan-limits/plan-limits.service';
 
 @Injectable()
 export class TrainingSessionsService {
@@ -41,12 +42,17 @@ export class TrainingSessionsService {
     private readonly exercisesRepository: Repository<ExerciseEntity>,
     @InjectRepository(TrainingContentEntity)
     private readonly trainingContentsRepository: Repository<TrainingContentEntity>,
+    private readonly planLimitsService: PlanLimitsService,
   ) {}
 
   async create(dto: CreateTrainingSessionDto, actor: AuthenticatedUser) {
     const tenantId = this.resolveTenantIdForCreate(dto.tenantId, actor);
 
     await this.ensureTenantExists(tenantId);
+    await this.planLimitsService.assertWithinLimit(
+      tenantId,
+      'sessionsPerMonth',
+    );
     await this.ensureTeamBelongsToTenant(dto.teamId, tenantId);
     const trainingContentIds = await this.ensureTrainingContentsBelongToTenant(
       dto.trainingContentIds,

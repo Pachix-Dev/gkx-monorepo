@@ -22,7 +22,7 @@ class AttendanceBulkItemDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  comment?: string;
+  notes?: string;
 }
 
 export class CreateAttendanceBulkDto {
@@ -32,7 +32,7 @@ export class CreateAttendanceBulkDto {
 
   @ApiProperty({ format: 'uuid' })
   @IsUUID()
-  sessionId!: string;
+  trainingSessionId!: string;
 
   @ApiProperty({ type: [AttendanceBulkItemDto] })
   @IsArray()

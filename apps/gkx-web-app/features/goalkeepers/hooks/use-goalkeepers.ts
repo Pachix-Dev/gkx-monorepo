@@ -7,6 +7,7 @@ import {
   getGoalkeepers,
   updateGoalkeeper,
   UpdateGoalkeeperInput,
+  uploadGoalkeeperAvatar,
 } from "@/lib/api/goalkeepers";
 import { queryKeys } from "@/lib/query/keys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -45,6 +46,18 @@ export function useDeleteGoalkeeperMutation() {
 
   return useMutation({
     mutationFn: (id: string) => deleteGoalkeeper(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.goalkeepers });
+    },
+  });
+}
+
+export function useUploadGoalkeeperAvatarMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      uploadGoalkeeperAvatar(id, file),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.goalkeepers });
     },

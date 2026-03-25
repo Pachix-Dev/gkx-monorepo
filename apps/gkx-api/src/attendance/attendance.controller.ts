@@ -100,12 +100,12 @@ export class AttendanceController {
     };
   }
 
-  @Get('session/:sessionId')
+  @Get('session/:trainingSessionId')
   @Roles(
     Role.SUPER_ADMIN, Role.USER,
   )
   @ApiOperation({ summary: 'Listar asistencias por sesion' })
-  @ApiUuidParam('sessionId', 'Identificador de la sesion')
+  @ApiUuidParam('trainingSessionId', 'Identificador de la sesion')
   @ApiTypedSuccessResponse({
     message: 'Session attendance retrieved successfully',
     isArray: true,
@@ -113,11 +113,11 @@ export class AttendanceController {
   })
   @ApiCommonErrorResponses()
   async findBySession(
-    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+    @Param('trainingSessionId', ParseUUIDPipe) trainingSessionId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data: unknown = await this.attendanceService.findBySession(
-      sessionId,
+      trainingSessionId,
       user,
     );
     return {

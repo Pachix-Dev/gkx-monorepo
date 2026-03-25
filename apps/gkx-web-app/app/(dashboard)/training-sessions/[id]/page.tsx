@@ -49,6 +49,14 @@ export default async function TrainingSessionDetailPage({
       queryFn: () => fetchAuthed(`/training-sessions/${id}/exercises`, token).then((p) => (p ? extractArray(p) : [])),
     }),
     queryClient.prefetchQuery({
+      queryKey: queryKeys.attendanceBySession(id),
+      queryFn: () => fetchAuthed(`/attendance/session/${id}`, token).then((p) => (p ? extractArray(p) : [])),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.evaluationsBySession(id),
+      queryFn: () => fetchAuthed(`/evaluations/session/${id}`, token).then((p) => (p ? extractArray(p) : [])),
+    }),
+    queryClient.prefetchQuery({
       queryKey: queryKeys.trainingContents({}),
       queryFn: () => fetchAuthed("/training-contents", token).then((p) => (p ? extractArray(p) : [])),
     }),

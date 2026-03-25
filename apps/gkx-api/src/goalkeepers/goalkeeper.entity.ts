@@ -29,6 +29,9 @@ export class GoalkeeperEntity {
   @JoinColumn({ name: 'userId' })
   user!: UserEntity;
 
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  name!: string | null;
+
   @Column({ type: 'date', nullable: true })
   dateOfBirth!: string | null;
 
@@ -55,6 +58,9 @@ export class GoalkeeperEntity {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   parentContact!: string | null;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  avatarUrl!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -1,14 +1,40 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsDateString,
   IsInt,
-  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
   Max,
+  MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class CreateEvaluationItemDto {
+  @ApiProperty({ example: 'handling' })
+  @IsString()
+  @MaxLength(80)
+  criterionCode!: string;
+
+  @ApiProperty({ example: 'Handling' })
+  @IsString()
+  @MaxLength(160)
+  criterionLabel!: string;
+
+  @ApiProperty({ minimum: 0, maximum: 10 })
+  @IsInt()
+  @Min(0)
+  @Max(10)
+  score!: number;
+
+  @ApiPropertyOptional({ example: 'Buen control en centros' })
+  @IsOptional()
+  @IsString()
+  comment?: string;
+}
 
 export class CreateEvaluationDto {
   @ApiProperty({ format: 'uuid' })
@@ -17,84 +43,26 @@ export class CreateEvaluationDto {
 
   @ApiProperty({ format: 'uuid' })
   @IsUUID()
-  goalkeeperId!: string;
+  trainingSessionId!: string;
 
   @ApiProperty({ format: 'uuid' })
   @IsUUID()
-  coachId!: string;
+  goalkeeperId!: string;
 
   @ApiProperty({ example: '2026-03-12' })
   @IsDateString()
-  date!: string;
+  evaluationDate!: string;
 
-  @ApiProperty({ minimum: 0, maximum: 10 })
-  @IsInt()
-  @Min(0)
-  @Max(10)
-  handling!: number;
-
-  @ApiProperty({ minimum: 0, maximum: 10 })
-  @IsInt()
-  @Min(0)
-  @Max(10)
-  diving!: number;
-
-  @ApiProperty({ minimum: 0, maximum: 10 })
-  @IsInt()
-  @Min(0)
-  @Max(10)
-  positioning!: number;
-
-  @ApiProperty({ minimum: 0, maximum: 10 })
-  @IsInt()
-  @Min(0)
-  @Max(10)
-  reflexes!: number;
-
-  @ApiProperty({ minimum: 0, maximum: 10 })
-  @IsInt()
-  @Min(0)
-  @Max(10)
-  communication!: number;
-
-  @ApiProperty({ minimum: 0, maximum: 10 })
-  @IsInt()
-  @Min(0)
-  @Max(10)
-  footwork!: number;
-
-  @ApiProperty({ minimum: 0, maximum: 10 })
-  @IsInt()
-  @Min(0)
-  @Max(10)
-  distribution!: number;
-
-  @ApiProperty({ minimum: 0, maximum: 10 })
-  @IsInt()
-  @Min(0)
-  @Max(10)
-  aerialPlay!: number;
-
-  @ApiProperty({ minimum: 0, maximum: 10 })
-  @IsInt()
-  @Min(0)
-  @Max(10)
-  oneVsOne!: number;
-
-  @ApiProperty({ minimum: 0, maximum: 10 })
-  @IsInt()
-  @Min(0)
-  @Max(10)
-  mentality!: number;
-
-  @ApiProperty({ example: 8.2 })
-  @IsNumber()
-  @Min(0)
-  @Max(10)
-  overallScore!: number;
-
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    example: 'Buen rendimiento general en toma de decisiones',
+  })
   @IsOptional()
   @IsString()
-  comments?: string;
+  generalComment?: string;
+
+  @ApiProperty({ type: [CreateEvaluationItemDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateEvaluationItemDto)
+  items!: CreateEvaluationItemDto[];
 }

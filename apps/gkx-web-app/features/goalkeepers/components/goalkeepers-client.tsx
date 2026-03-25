@@ -3,12 +3,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/features/auth/use-auth";
 import { useTeamsQuery } from "@/features/teams/hooks/use-teams";
-import { useUsersQuery } from "@/features/users/hooks/use-users";
 import {
   useCreateGoalkeeperMutation,
   useDeleteGoalkeeperMutation,
   useGoalkeepersQuery,
   useUpdateGoalkeeperMutation,
+  useUploadGoalkeeperAvatarMutation,
 } from "@/features/goalkeepers/hooks/use-goalkeepers";
 import {
   createGoalkeeperSchema,
@@ -16,7 +16,7 @@ import {
   updateGoalkeeperSchema,
   UpdateGoalkeeperFormValues,
 } from "@/features/goalkeepers/schemas/goalkeeper-form";
-import { useMemo, useState } from "react";
+import { useRef, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { sileo } from "sileo";
 
@@ -26,11 +26,14 @@ export function GoalkeepersClient() {
   const { user: authUser } = useAuth();
   const tenantId = authUser?.tenantId;
   const goalkeepersQuery = useGoalkeepersQuery();
-  const usersQuery = useUsersQuery();
   const teamsQuery = useTeamsQuery();
   const createMutation = useCreateGoalkeeperMutation();
   const updateMutation = useUpdateGoalkeeperMutation();
   const deleteMutation = useDeleteGoalkeeperMutation();
+  const avatarMutation = useUploadGoalkeeperAvatarMutation();
+
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUploadId, setAvatarUploadId] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -41,7 +44,7 @@ export function GoalkeepersClient() {
     resolver: zodResolver(createGoalkeeperSchema),
     defaultValues: {
       tenantId: tenantId || "",
-      userId: "",
+      name: "",
       dateOfBirth: "",
       dominantHand: "",
       dominantFoot: "",
@@ -58,7 +61,7 @@ export function GoalkeepersClient() {
     resolver: zodResolver(updateGoalkeeperSchema),
     defaultValues: {
       tenantId: tenantId || "",
-      userId: "",
+      name: "",
       dateOfBirth: "",
       dominantHand: "",
       dominantFoot: "",
@@ -73,7 +76,6 @@ export function GoalkeepersClient() {
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
   const goalkeepers = useMemo(() => goalkeepersQuery.data ?? [], [goalkeepersQuery.data]);
-  const users = useMemo(() => usersQuery.data ?? [], [usersQuery.data]);
   const teams = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
   const activeForm = formMode === "create" ? createForm : editForm;
 
@@ -82,32 +84,10 @@ export function GoalkeepersClient() {
     return goalkeepers.filter((item) => item.tenantId === tenantId);
   }, [goalkeepers, tenantId]);
 
-  const tenantScopedUsers = useMemo(() => {
-    if (!tenantId) return users;
-    return users.filter((item) => item.tenantId === tenantId);
-  }, [tenantId, users]);
-
   const tenantScopedTeams = useMemo(() => {
     if (!tenantId) return teams;
     return teams.filter((item) => item.tenantId === tenantId);
   }, [teams, tenantId]);
-
-  const goalkeeperCandidateUsers = useMemo(() => {
-    return tenantScopedUsers.filter((item) => item.role === "USER");
-  }, [tenantScopedUsers]);
-
-  const linkedUserIds = useMemo(() => {
-    return new Set(tenantScopedGoalkeepers.map((item) => item.userId));
-  }, [tenantScopedGoalkeepers]);
-
-  const editingGoalkeeperUserId = useMemo(() => {
-    if (!editingId) return null;
-    return tenantScopedGoalkeepers.find((item) => item.id === editingId)?.userId ?? null;
-  }, [editingId, tenantScopedGoalkeepers]);
-
-  const userById = useMemo(() => {
-    return new Map(tenantScopedUsers.map((item) => [item.id, item]));
-  }, [tenantScopedUsers]);
 
   const teamById = useMemo(() => {
     return new Map(tenantScopedTeams.map((item) => [item.id, item]));
@@ -115,25 +95,24 @@ export function GoalkeepersClient() {
 
   const filteredGoalkeepers = useMemo(() => {
     const value = search.trim().toLowerCase();
-    if (!value) return goalkeepers;
+    if (!value) return tenantScopedGoalkeepers;
 
-    return goalkeepers.filter((item) => {
+    return tenantScopedGoalkeepers.filter((item) => {
       const userId = item.userId.toLowerCase();
-      const userName = userById.get(item.userId)?.fullName?.toLowerCase() ?? "";
-      const email = userById.get(item.userId)?.email?.toLowerCase() ?? "";
+      const name = item.name?.toLowerCase() ?? "";
       const category = item.category?.toLowerCase() ?? "";
       const teamName = item.teamId ? teamById.get(item.teamId)?.name?.toLowerCase() ?? "" : "";
 
-      return userId.includes(value) || userName.includes(value) || email.includes(value) || category.includes(value) || teamName.includes(value);
+      return userId.includes(value) || name.includes(value) || category.includes(value) || teamName.includes(value);
     });
-  }, [goalkeepers, search, teamById, userById]);
+  }, [search, teamById, tenantScopedGoalkeepers]);
 
   const openCreate = () => {
     setFormMode("create");
     setEditingId(null);
     createForm.reset({
       tenantId: tenantId || "",
-      userId: "",
+      name: "",
       dateOfBirth: "",
       dominantHand: "",
       dominantFoot: "",
@@ -153,9 +132,10 @@ export function GoalkeepersClient() {
 
     setFormMode("edit");
     setEditingId(id);
+    setAvatarUploadId(id);
     editForm.reset({
       tenantId: target.tenantId || tenantId || "",
-      userId: target.userId || "",
+      name: target.name || "",
       dateOfBirth: target.dateOfBirth || "",
       dominantHand: target.dominantHand || "",
       dominantFoot: target.dominantFoot || "",
@@ -172,6 +152,7 @@ export function GoalkeepersClient() {
   const closeForm = () => {
     setIsFormOpen(false);
     setEditingId(null);
+    setAvatarUploadId(null);
   };
 
   const normalizePayload = (values: CreateGoalkeeperFormValues | UpdateGoalkeeperFormValues) => {
@@ -189,10 +170,29 @@ export function GoalkeepersClient() {
     };
   };
 
+  const onAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !avatarUploadId) return;
+
+    await sileo.promise(
+      avatarMutation.mutateAsync({ id: avatarUploadId, file }),
+      {
+        loading: { title: "Subiendo avatar" },
+        success: { title: "Avatar actualizado" },
+        error: (error: unknown) => ({
+          title: "Error al subir avatar",
+          description:
+            error instanceof Error ? error.message : "No se pudo subir el avatar.",
+        }),
+      },
+    );
+    if (avatarInputRef.current) avatarInputRef.current.value = "";
+  };
+
   const onCreateSubmit = async (values: CreateGoalkeeperFormValues) => {
     await sileo.promise(createMutation.mutateAsync(normalizePayload(values)), {
       loading: { title: "Creando portero" },
-      success: { title: "Portero creado", description: values.userId },
+      success: { title: "Portero creado", description: values.name },
       error: (error: unknown) => ({
         title: "Error al crear portero",
         description: error instanceof Error ? error.message : "No se pudo crear el portero.",
@@ -206,7 +206,7 @@ export function GoalkeepersClient() {
 
     await sileo.promise(updateMutation.mutateAsync({ id: editingId, payload: normalizePayload(values) }), {
       loading: { title: "Actualizando portero" },
-      success: { title: "Portero actualizado", description: values.userId },
+      success: { title: "Portero actualizado", description: values.name },
       error: (error: unknown) => ({
         title: "Error al actualizar portero",
         description: error instanceof Error ? error.message : "No se pudo actualizar el portero.",
@@ -224,13 +224,13 @@ export function GoalkeepersClient() {
     await onEditSubmit(values);
   };
 
-  const onDelete = async (id: string, userId: string) => {
-    const ok = window.confirm(`Eliminar portero ${userId}?`);
+  const onDelete = async (id: string, goalkeeperName: string) => {
+    const ok = window.confirm(`Eliminar portero ${goalkeeperName}?`);
     if (!ok) return;
 
     await sileo.promise(deleteMutation.mutateAsync(id), {
       loading: { title: "Eliminando portero" },
-      success: { title: "Portero eliminado", description: userId },
+      success: { title: "Portero eliminado", description: goalkeeperName },
       error: (error: unknown) => ({
         title: "Error al eliminar portero",
         description: error instanceof Error ? error.message : "No se pudo eliminar el portero.",
@@ -247,7 +247,7 @@ export function GoalkeepersClient() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Filtrar por usuario, equipo o categoria"
+              placeholder="Filtrar por nombre, equipo o categoria"
               className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none ring-offset-2 transition placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
             />
           </label>
@@ -289,22 +289,11 @@ export function GoalkeepersClient() {
             </label>
 
             <label className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Usuario</span>
-              <select
-                {...activeForm.register("userId")}
+              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Nombre</span>
+              <input
+                {...activeForm.register("name")}
                 className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="">Selecciona usuario</option>
-                {goalkeeperCandidateUsers.map((user) => {
-                  const alreadyLinked = linkedUserIds.has(user.id) && user.id !== editingGoalkeeperUserId;
-
-                  return (
-                    <option key={user.id} value={user.id} disabled={alreadyLinked}>
-                      {user.fullName} - {user.email}{alreadyLinked ? " - ya vinculado" : ""}
-                    </option>
-                  );
-                })}
-              </select>
+              />
             </label>
 
             <label className="flex flex-col gap-1">
@@ -402,6 +391,34 @@ export function GoalkeepersClient() {
                 {isSaving ? "Guardando..." : formMode === "create" ? "Crear portero" : "Guardar cambios"}
               </button>
             </div>
+
+            {formMode === "edit" && avatarUploadId ? (
+              <div className="md:col-span-2 flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-4">
+                <span className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Avatar</span>
+                {goalkeepers.find((g) => g.id === avatarUploadId)?.avatarUrl ? (
+                  <img
+                    src={`${process.env.NEXT_PUBLIC_API_URL}${goalkeepers.find((g) => g.id === avatarUploadId)?.avatarUrl}`}
+                    alt="Avatar"
+                    className="h-20 w-20 rounded-full object-cover border border-border"
+                  />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted border border-border text-xs text-muted-foreground">
+                    Sin foto
+                  </div>
+                )}
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/webp,image/png,image/jpeg"
+                  onChange={onAvatarChange}
+                  disabled={avatarMutation.isPending}
+                  className="text-sm text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1 file:text-xs file:font-medium file:text-primary-foreground disabled:opacity-60"
+                />
+                {avatarMutation.isPending ? (
+                  <p className="text-xs text-muted-foreground">Subiendo...</p>
+                ) : null}
+              </div>
+            ) : null}
           </form>
         </div>
       ) : null}
@@ -409,7 +426,6 @@ export function GoalkeepersClient() {
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         {goalkeepersQuery.isLoading ? <p className="p-5 text-sm text-muted-foreground">Cargando goalkeepers...</p> : null}
         {goalkeepersQuery.error instanceof Error ? <p className="p-5 text-sm text-red-600">{goalkeepersQuery.error.message}</p> : null}
-        {usersQuery.error instanceof Error ? <p className="p-5 text-sm text-red-600">{usersQuery.error.message}</p> : null}
         {teamsQuery.error instanceof Error ? <p className="p-5 text-sm text-red-600">{teamsQuery.error.message}</p> : null}
 
         {!goalkeepersQuery.isLoading && !(goalkeepersQuery.error instanceof Error) ? (
@@ -420,7 +436,7 @@ export function GoalkeepersClient() {
               <table className="min-w-full text-left text-sm">
                 <thead className="border-b border-border bg-muted">
                   <tr>
-                    <th className="px-4 py-3 font-medium text-foreground">Usuario</th>
+                    <th className="px-4 py-3 font-medium text-foreground">Nombre</th>
                     <th className="px-4 py-3 font-medium text-foreground">Categoria</th>
                     <th className="px-4 py-3 font-medium text-foreground">Equipo</th>
                     <th className="px-4 py-3 font-medium text-foreground">Acciones</th>
@@ -429,7 +445,22 @@ export function GoalkeepersClient() {
                 <tbody>
                   {filteredGoalkeepers.map((item) => (
                     <tr key={item.id} className="border-b border-border/70 last:border-b-0">
-                      <td className="px-4 py-3 text-card-foreground">{userById.get(item.userId)?.fullName || item.userId}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {item.avatarUrl ? (
+                            <img
+                              src={`${process.env.NEXT_PUBLIC_API_URL}${item.avatarUrl}`}
+                              alt={item.name ?? "Avatar"}
+                              className="h-8 w-8 rounded-full object-cover border border-border shrink-0"
+                            />
+                          ) : (
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted border border-border text-xs text-muted-foreground">
+                              {(item.name ?? "?").charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="text-card-foreground">{item.name || "-"}</span>
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-muted-foreground">{item.category || "-"}</td>
                       <td className="px-4 py-3 text-muted-foreground">{item.teamId ? teamById.get(item.teamId)?.name || item.teamId : "-"}</td>
                       <td className="px-4 py-3">
@@ -443,7 +474,7 @@ export function GoalkeepersClient() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => onDelete(item.id, item.userId)}
+                            onClick={() => onDelete(item.id, item.name || item.userId)}
                             className="rounded-md bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground"
                           >
                             Eliminar

@@ -35,15 +35,17 @@ export class AttendanceService {
   ): Promise<AttendanceEntity> {
     const tenantId = this.resolveTenantIdForCreate(dto.tenantId, actor);
     await this.ensureTenantExists(tenantId);
-    await this.ensureSessionBelongsToTenant(dto.sessionId, tenantId);
+    await this.ensureSessionBelongsToTenant(dto.trainingSessionId, tenantId);
     await this.ensureGoalkeeperBelongsToTenant(dto.goalkeeperId, tenantId);
 
     const entity = this.attendanceRepository.create({
       tenantId,
-      sessionId: dto.sessionId,
+      trainingSessionId: dto.trainingSessionId,
       goalkeeperId: dto.goalkeeperId,
       status: dto.status ?? AttendanceStatus.PRESENT,
-      comment: dto.comment ?? null,
+      notes: dto.notes ?? null,
+      recordedByUserId: actor.userId,
+      recordedAt: new Date(),
     });
 
     return this.attendanceRepository.save(entity);
@@ -55,7 +57,7 @@ export class AttendanceService {
   ): Promise<AttendanceEntity[]> {
     const tenantId = this.resolveTenantIdForCreate(dto.tenantId, actor);
     await this.ensureTenantExists(tenantId);
-    await this.ensureSessionBelongsToTenant(dto.sessionId, tenantId);
+    await this.ensureSessionBelongsToTenant(dto.trainingSessionId, tenantId);
 
     const results: AttendanceEntity[] = [];
     for (const item of dto.items) {
@@ -64,7 +66,7 @@ export class AttendanceService {
       let entity = await this.attendanceRepository.findOne({
         where: {
           tenantId,
-          sessionId: dto.sessionId,
+          trainingSessionId: dto.trainingSessionId,
           goalkeeperId: item.goalkeeperId,
         },
       });
@@ -72,14 +74,18 @@ export class AttendanceService {
       if (!entity) {
         entity = this.attendanceRepository.create({
           tenantId,
-          sessionId: dto.sessionId,
+          trainingSessionId: dto.trainingSessionId,
           goalkeeperId: item.goalkeeperId,
           status: item.status,
-          comment: item.comment ?? null,
+          notes: item.notes ?? null,
+          recordedByUserId: actor.userId,
+          recordedAt: new Date(),
         });
       } else {
         entity.status = item.status;
-        entity.comment = item.comment ?? null;
+        entity.notes = item.notes ?? null;
+        entity.recordedByUserId = actor.userId;
+        entity.recordedAt = new Date();
       }
 
       results.push(await this.attendanceRepository.save(entity));
@@ -113,7 +119,7 @@ export class AttendanceService {
     return this.attendanceRepository.find({
       where: {
         tenantId: session.tenantId,
-        sessionId,
+        trainingSessionId: sessionId,
       },
       order: { createdAt: 'DESC' },
     });
@@ -137,8 +143,8 @@ export class AttendanceService {
       throw new BadRequestException('Changing tenantId is not allowed');
     }
 
-    if (dto.sessionId) {
-      await this.ensureSessionBelongsToTenant(dto.sessionId, entity.tenantId);
+    if (dto.trainingSessionId) {
+      await this.ensureSessionBelongsToTenant(dto.trainingSessionId, entity.tenantId);
     }
 
     if (dto.goalkeeperId) {
@@ -146,10 +152,12 @@ export class AttendanceService {
     }
 
     Object.assign(entity, {
-      sessionId: dto.sessionId ?? entity.sessionId,
+      trainingSessionId: dto.trainingSessionId ?? entity.trainingSessionId,
       goalkeeperId: dto.goalkeeperId ?? entity.goalkeeperId,
       status: dto.status ?? entity.status,
-      comment: dto.comment ?? entity.comment,
+      notes: dto.notes ?? entity.notes,
+      recordedByUserId: actor.userId,
+      recordedAt: new Date(),
     });
 
     return this.attendanceRepository.save(entity);

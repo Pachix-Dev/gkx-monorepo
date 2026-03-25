@@ -131,33 +131,6 @@ export class TeamModel {
   @ApiProperty({ format: 'date-time' })
   updatedAt!: Date;
 }
-
-export class CoachModel {
-  @ApiProperty({ format: 'uuid' })
-  id!: string;
-
-  @ApiProperty({ format: 'uuid' })
-  tenantId!: string;
-
-  @ApiProperty({ format: 'uuid' })
-  userId!: string;
-
-  @ApiProperty({ nullable: true })
-  specialty!: string | null;
-
-  @ApiProperty({ nullable: true })
-  licenseLevel!: string | null;
-
-  @ApiProperty({ nullable: true })
-  experienceYears!: number | null;
-
-  @ApiProperty({ format: 'date-time' })
-  createdAt!: Date;
-
-  @ApiProperty({ format: 'date-time' })
-  updatedAt!: Date;
-}
-
 export class GoalkeeperModel {
   @ApiProperty({ format: 'uuid' })
   id!: string;
@@ -167,6 +140,9 @@ export class GoalkeeperModel {
 
   @ApiProperty({ format: 'uuid' })
   userId!: string;
+
+  @ApiProperty({ nullable: true })
+  name!: string | null;
 
   @ApiProperty({ nullable: true })
   dateOfBirth!: string | null;
@@ -195,6 +171,9 @@ export class GoalkeeperModel {
   @ApiProperty({ nullable: true })
   parentContact!: string | null;
 
+  @ApiProperty({ nullable: true })
+  avatarUrl!: string | null;
+
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;
 
@@ -220,7 +199,10 @@ export class GoalkeeperMetricsModel {
   @ApiProperty({ format: 'uuid' })
   goalkeeperId!: string;
 
-  @ApiProperty({ type: 'array', items: { type: 'object', additionalProperties: true } })
+  @ApiProperty({
+    type: 'array',
+    items: { type: 'object', additionalProperties: true },
+  })
   records!: Record<string, unknown>[];
 }
 
@@ -445,7 +427,7 @@ export class AttendanceModel {
   tenantId!: string;
 
   @ApiProperty({ format: 'uuid' })
-  sessionId!: string;
+  trainingSessionId!: string;
 
   @ApiProperty({ format: 'uuid' })
   goalkeeperId!: string;
@@ -454,7 +436,13 @@ export class AttendanceModel {
   status!: string;
 
   @ApiProperty({ nullable: true })
-  comment!: string | null;
+  notes!: string | null;
+
+  @ApiProperty({ format: 'uuid', nullable: true })
+  recordedByUserId!: string | null;
+
+  @ApiProperty({ format: 'date-time', nullable: true })
+  recordedAt!: Date | null;
 
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;
@@ -473,47 +461,43 @@ export class EvaluationModel {
   @ApiProperty({ format: 'uuid' })
   goalkeeperId!: string;
 
+  @ApiProperty({ format: 'uuid', nullable: true })
+  trainingSessionId!: string | null;
+
   @ApiProperty({ format: 'uuid' })
-  coachId!: string;
+  evaluatedByUserId!: string;
 
   @ApiProperty({ format: 'date' })
-  date!: string;
+  evaluationDate!: string;
 
-  @ApiProperty()
-  handling!: number;
-
-  @ApiProperty()
-  diving!: number;
-
-  @ApiProperty()
-  positioning!: number;
-
-  @ApiProperty()
-  reflexes!: number;
-
-  @ApiProperty()
-  communication!: number;
-
-  @ApiProperty()
-  footwork!: number;
-
-  @ApiProperty()
-  distribution!: number;
-
-  @ApiProperty()
-  aerialPlay!: number;
-
-  @ApiProperty()
-  oneVsOne!: number;
-
-  @ApiProperty()
-  mentality!: number;
+  @ApiProperty({
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        evaluationId: { type: 'string', format: 'uuid' },
+        criterionCode: { type: 'string' },
+        criterionLabel: { type: 'string' },
+        score: { type: 'number' },
+        comment: { type: 'string', nullable: true },
+      },
+    },
+  })
+  items!: Array<{
+    id: string;
+    evaluationId: string;
+    criterionCode: string;
+    criterionLabel: string;
+    score: number;
+    comment: string | null;
+  }>;
 
   @ApiProperty()
   overallScore!: number;
 
   @ApiProperty({ nullable: true })
-  comments!: string | null;
+  generalComment!: string | null;
 
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;

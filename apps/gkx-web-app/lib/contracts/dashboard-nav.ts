@@ -97,6 +97,14 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     openapiPath: "/api/evaluations",
   },
   {
+    href: "/reports",
+    label: "Reports",
+    section: "training",
+    roles: ["SUPER_ADMIN", "USER"],
+    implemented: true,
+    openapiPath: "/api/reports",
+  },
+  {
     href: "/tenants",
     label: "Tenants",
     section: "system",
@@ -111,9 +119,20 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     roles: ["SUPER_ADMIN", "USER"],
     implemented: true,
   },
+  {
+    href: "/billing",
+    label: "Billing",
+    section: "system",
+    roles: ["SUPER_ADMIN", "USER"],
+    implemented: true,
+    openapiPath: "/api/subscriptions",
+  },
 ];
 
-export const DASHBOARD_NAV_SECTIONS: Array<{ key: DashboardNavItem["section"]; label: string }> = [
+export const DASHBOARD_NAV_SECTIONS: Array<{
+  key: DashboardNavItem["section"];
+  label: string;
+}> = [
   { key: "core", label: "Core" },
   { key: "phase-1", label: "Phase 1" },
   { key: "training", label: "Training" },

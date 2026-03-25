@@ -4,12 +4,15 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { GoalkeeperEntity } from '../goalkeepers/goalkeeper.entity';
 import { TenantEntity } from '../tenants/tenant.entity';
+import { TrainingSessionEntity } from '../training-sessions/training-session.entity';
 import { UserEntity } from '../users/user.entity';
+import { EvaluationItemEntity } from './evaluation-item.entity';
 
 @Entity({ name: 'evaluations' })
 export class EvaluationEntity {
@@ -30,51 +33,37 @@ export class EvaluationEntity {
   @JoinColumn({ name: 'goalkeeperId' })
   goalkeeper!: GoalkeeperEntity;
 
+  @Column({ type: 'uuid', nullable: true })
+  trainingSessionId!: string | null;
+
+  @ManyToOne(() => TrainingSessionEntity, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'trainingSessionId' })
+  trainingSession!: TrainingSessionEntity | null;
+
   @Column({ type: 'uuid' })
-  coachId!: string;
+  evaluatedByUserId!: string;
 
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'coachId' })
-  coach!: UserEntity;
+  @JoinColumn({ name: 'evaluatedByUserId' })
+  evaluator!: UserEntity;
 
   @Column({ type: 'date' })
-  date!: string;
-
-  @Column({ type: 'int' })
-  handling!: number;
-
-  @Column({ type: 'int' })
-  diving!: number;
-
-  @Column({ type: 'int' })
-  positioning!: number;
-
-  @Column({ type: 'int' })
-  reflexes!: number;
-
-  @Column({ type: 'int' })
-  communication!: number;
-
-  @Column({ type: 'int' })
-  footwork!: number;
-
-  @Column({ type: 'int' })
-  distribution!: number;
-
-  @Column({ type: 'int' })
-  aerialPlay!: number;
-
-  @Column({ type: 'int' })
-  oneVsOne!: number;
-
-  @Column({ type: 'int' })
-  mentality!: number;
+  evaluationDate!: string;
 
   @Column({ type: 'decimal', precision: 5, scale: 2 })
   overallScore!: number;
 
   @Column({ type: 'text', nullable: true })
-  comments!: string | null;
+  generalComment!: string | null;
+
+  @OneToMany(() => EvaluationItemEntity, (item) => item.evaluation, {
+    cascade: true,
+    eager: true,
+  })
+  items!: EvaluationItemEntity[];
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -14,9 +14,10 @@ export class CreateGoalkeeperDto {
   @IsUUID()
   tenantId!: string;
 
-  @ApiProperty({ format: 'uuid' })
-  @IsUUID()
-  userId!: string;
+  @ApiProperty({ example: 'Carlos Perez' })
+  @IsString()
+  @MaxLength(120)
+  name!: string;
 
   @ApiPropertyOptional({ example: '2008-05-24' })
   @IsOptional()

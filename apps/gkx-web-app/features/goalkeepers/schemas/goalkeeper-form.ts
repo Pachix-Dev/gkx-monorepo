@@ -4,7 +4,7 @@ const optionalNumber = z.number().optional();
 
 export const createGoalkeeperSchema = z.object({
   tenantId: z.string().min(1, "Tenant ID es obligatorio"),
-  userId: z.string().min(1, "User ID es obligatorio"),
+  name: z.string().min(1, "Nombre es obligatorio"),
   dateOfBirth: z.string().optional(),
   dominantHand: z.string().optional(),
   dominantFoot: z.string().optional(),

@@ -10,10 +10,11 @@ import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interfa
 import { Role } from '../auth/roles.enum';
 import { GoalkeeperEntity } from '../goalkeepers/goalkeeper.entity';
 import { TenantEntity } from '../tenants/tenant.entity';
-import { UserEntity } from '../users/user.entity';
+import { TrainingSessionEntity } from '../training-sessions/training-session.entity';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { UpdateEvaluationDto } from './dto/update-evaluation.dto';
 import { EvaluationEntity } from './evaluation.entity';
+import { EvaluationItemEntity } from './evaluation-item.entity';
 
 @Injectable()
 export class EvaluationsService {
@@ -24,33 +25,27 @@ export class EvaluationsService {
     private readonly tenantsRepository: Repository<TenantEntity>,
     @InjectRepository(GoalkeeperEntity)
     private readonly goalkeepersRepository: Repository<GoalkeeperEntity>,
-    @InjectRepository(UserEntity)
-    private readonly usersRepository: Repository<UserEntity>,
+    @InjectRepository(TrainingSessionEntity)
+    private readonly sessionsRepository: Repository<TrainingSessionEntity>,
   ) {}
 
   async create(dto: CreateEvaluationDto, actor: AuthenticatedUser) {
     const tenantId = this.resolveTenantIdForCreate(dto.tenantId, actor);
     await this.ensureTenantExists(tenantId);
     await this.ensureGoalkeeperBelongsToTenant(dto.goalkeeperId, tenantId);
-    await this.ensureResponsibleBelongsToTenant(dto.coachId, tenantId);
+    await this.ensureSessionBelongsToTenant(dto.trainingSessionId, tenantId);
+
+    const normalizedItems = this.normalizeItems(dto.items);
 
     const entity = this.evaluationsRepository.create({
       tenantId,
+      trainingSessionId: dto.trainingSessionId,
       goalkeeperId: dto.goalkeeperId,
-      coachId: dto.coachId,
-      date: dto.date,
-      handling: dto.handling,
-      diving: dto.diving,
-      positioning: dto.positioning,
-      reflexes: dto.reflexes,
-      communication: dto.communication,
-      footwork: dto.footwork,
-      distribution: dto.distribution,
-      aerialPlay: dto.aerialPlay,
-      oneVsOne: dto.oneVsOne,
-      mentality: dto.mentality,
-      overallScore: dto.overallScore,
-      comments: dto.comments ?? null,
+      evaluatedByUserId: actor.userId,
+      evaluationDate: dto.evaluationDate,
+      overallScore: this.calculateOverallScore(normalizedItems),
+      generalComment: dto.generalComment ?? null,
+      items: normalizedItems,
     });
 
     return this.evaluationsRepository.save(entity);
@@ -63,6 +58,23 @@ export class EvaluationsService {
 
     return this.evaluationsRepository.find({
       where: { tenantId: actor.tenantId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findBySession(sessionId: string, actor: AuthenticatedUser) {
+    const session = await this.sessionsRepository.findOne({ where: { id: sessionId } });
+    if (!session) {
+      throw new NotFoundException('Training session not found');
+    }
+
+    this.assertTenantAccess(session.tenantId, actor);
+
+    return this.evaluationsRepository.find({
+      where: {
+        tenantId: session.tenantId,
+        trainingSessionId: sessionId,
+      },
       order: { createdAt: 'DESC' },
     });
   }
@@ -85,26 +97,19 @@ export class EvaluationsService {
       await this.ensureGoalkeeperBelongsToTenant(dto.goalkeeperId, entity.tenantId);
     }
 
-    if (dto.coachId) {
-      await this.ensureResponsibleBelongsToTenant(dto.coachId, entity.tenantId);
+    if (dto.trainingSessionId) {
+      await this.ensureSessionBelongsToTenant(dto.trainingSessionId, entity.tenantId);
     }
 
+    const nextItems = dto.items ? this.normalizeItems(dto.items) : entity.items;
+
     Object.assign(entity, {
+      trainingSessionId: dto.trainingSessionId ?? entity.trainingSessionId,
       goalkeeperId: dto.goalkeeperId ?? entity.goalkeeperId,
-      coachId: dto.coachId ?? entity.coachId,
-      date: dto.date ?? entity.date,
-      handling: dto.handling ?? entity.handling,
-      diving: dto.diving ?? entity.diving,
-      positioning: dto.positioning ?? entity.positioning,
-      reflexes: dto.reflexes ?? entity.reflexes,
-      communication: dto.communication ?? entity.communication,
-      footwork: dto.footwork ?? entity.footwork,
-      distribution: dto.distribution ?? entity.distribution,
-      aerialPlay: dto.aerialPlay ?? entity.aerialPlay,
-      oneVsOne: dto.oneVsOne ?? entity.oneVsOne,
-      mentality: dto.mentality ?? entity.mentality,
-      overallScore: dto.overallScore ?? entity.overallScore,
-      comments: dto.comments ?? entity.comments,
+      evaluationDate: dto.evaluationDate ?? entity.evaluationDate,
+      generalComment: dto.generalComment ?? entity.generalComment,
+      overallScore: this.calculateOverallScore(nextItems),
+      items: nextItems,
     });
 
     return this.evaluationsRepository.save(entity);
@@ -158,11 +163,33 @@ export class EvaluationsService {
     }
   }
 
-  private async ensureResponsibleBelongsToTenant(responsibleUserId: string, tenantId: string) {
-    const responsibleUser = await this.usersRepository.findOne({ where: { id: responsibleUserId } });
-    if (!responsibleUser) throw new NotFoundException('Responsible user not found');
-    if (responsibleUser.tenantId !== tenantId) {
-      throw new BadRequestException('Responsible user does not belong to the provided tenant');
+  private async ensureSessionBelongsToTenant(sessionId: string, tenantId: string) {
+    const session = await this.sessionsRepository.findOne({ where: { id: sessionId } });
+    if (!session) throw new NotFoundException('Training session not found');
+    if (session.tenantId !== tenantId) {
+      throw new BadRequestException(
+        'Training session does not belong to the provided tenant',
+      );
     }
+  }
+
+  private normalizeItems(items: CreateEvaluationDto['items']) {
+    if (!items?.length) {
+      throw new BadRequestException('At least one evaluation item is required');
+    }
+
+    return items.map((item) => {
+      const entity = new EvaluationItemEntity();
+      entity.criterionCode = item.criterionCode.trim();
+      entity.criterionLabel = item.criterionLabel.trim();
+      entity.score = item.score;
+      entity.comment = item.comment?.trim() || null;
+      return entity;
+    });
+  }
+
+  private calculateOverallScore(items: EvaluationItemEntity[]) {
+    const total = items.reduce((acc, item) => acc + Number(item.score), 0);
+    return Number((total / items.length).toFixed(2));
   }
 }

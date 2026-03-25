@@ -6,6 +6,7 @@ import {
   useTrainingSessionsQuery,
 } from "@/features/training-sessions/hooks/use-training-sessions";
 import { useTrainingContentsQuery } from "@/features/training-contents/hooks/use-training-contents";
+import { useTeamsQuery } from "@/features/teams/hooks/use-teams";
 import { DatePickerInput, DateTimePickerInput, formatDateYMD } from "@/components/ui/date-picker";
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
@@ -42,14 +43,22 @@ export function TrainingSessionsClient() {
   const [sessionDescription, setSessionDescription] = useState("");
   const [sessionNotes, setSessionNotes] = useState("");
   const [selectedContentIds, setSelectedContentIds] = useState<string[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState("");
 
   const sessionsQuery = useTrainingSessionsQuery();
   const contentsQuery = useTrainingContentsQuery({});
+  const teamsQuery = useTeamsQuery();
   const createSessionMutation = useCreateTrainingSessionMutation();
 
   // rerender-memo: memoize derived list
   const sessions = useMemo(() => sessionsQuery.data ?? [], [sessionsQuery.data]);
   const contents = useMemo(() => contentsQuery.data ?? [], [contentsQuery.data]);
+  const teams = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
+  const tenantScopedTeams = useMemo(
+    () => (tenantId ? teams.filter((t) => t.tenantId === tenantId) : teams),
+    [teams, tenantId],
+  );
+  const teamById = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
 
   const toggleContent = (contentId: string) => {
     setSelectedContentIds((current) =>
@@ -91,6 +100,7 @@ export function TrainingSessionsClient() {
         date: sessionDate,
         startTime: startIso,
         endTime: endIso,
+        teamId: selectedTeamId || undefined,
         description: sessionDescription || undefined,
         location: sessionLocation || undefined,
         notes: sessionNotes || undefined,
@@ -116,6 +126,7 @@ export function TrainingSessionsClient() {
     setSessionDescription("");
     setSessionNotes("");
     setSelectedContentIds([]);
+    setSelectedTeamId("");
   };
 
   return (
@@ -204,6 +215,21 @@ export function TrainingSessionsClient() {
               />
             </label>
             <label className={labelClass}>
+              <span className={labelTextClass}>Equipo</span>
+              <select
+                value={selectedTeamId}
+                onChange={(e) => setSelectedTeamId(e.target.value)}
+                className={inputClass}
+              >
+                <option value="">Sin equipo</option>
+                {tenantScopedTeams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className={labelClass}>
               <span className={labelTextClass}>Ubicación</span>
               <input
                 value={sessionLocation}
@@ -287,6 +313,9 @@ export function TrainingSessionsClient() {
                         {new Date(session.endTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </p>
                       {session.location ? <p>{session.location}</p> : null}
+                      {session.teamId ? (
+                        <p className="font-medium text-foreground">{teamById.get(session.teamId)?.name ?? session.teamId}</p>
+                      ) : null}
                     </div>
                     <div className="mt-auto pt-3">
                       <span className="text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">

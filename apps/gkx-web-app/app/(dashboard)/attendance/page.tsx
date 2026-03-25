@@ -1,11 +1,7 @@
-import { ModulePlaceholder } from "@/components/dashboard/module-placeholder";
+import { AttendanceClient } from "@/features/attendance/components/attendance-client";
+import { requireServerRole } from "@/lib/auth/server-guard";
 
-export default function AttendancePage() {
-  return (
-    <ModulePlaceholder
-      title="Attendance"
-      description="Base del modulo lista. Siguiente paso: registro bulk por sesion y estados de asistencia."
-      endpoint="/api/attendance"
-    />
-  );
+export default async function AttendancePage() {
+  await requireServerRole(["SUPER_ADMIN", "USER"]);
+  return <AttendanceClient />;
 }

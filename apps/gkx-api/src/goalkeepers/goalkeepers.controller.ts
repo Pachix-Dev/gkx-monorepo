@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -7,9 +8,12 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   ApiCommonErrorResponses,
   ApiTypedSuccessResponse,
@@ -31,6 +35,12 @@ import { Role } from '../auth/roles.enum';
 import { CreateGoalkeeperDto } from './dto/create-goalkeeper.dto';
 import { UpdateGoalkeeperDto } from './dto/update-goalkeeper.dto';
 import { GoalkeepersService } from './goalkeepers.service';
+
+interface UploadedGoalkeeperAvatar {
+  mimetype: string;
+  buffer: Buffer;
+  originalname: string;
+}
 
 @Controller('goalkeepers')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -186,5 +196,49 @@ export class GoalkeepersController {
   ) {
     const data = await this.goalkeepersService.remove(id, user);
     return { success: true, message: 'Goalkeeper profile deleted successfully', data };
+  }
+
+  @Post(':id/avatar')
+  @Roles(Role.SUPER_ADMIN, Role.USER)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: Number(process.env.GOALKEEPER_AVATAR_MAX_FILE_SIZE ?? 5_000_000),
+      },
+      fileFilter: (_req, file, callback) => {
+        const allowed = ['image/webp', 'image/png', 'image/jpeg'];
+        callback(null, allowed.includes(file.mimetype));
+      },
+    }),
+  )
+  @ApiOperation({ summary: 'Subir o actualizar avatar del portero' })
+  @ApiUuidParam('id', 'Identificador del portero')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiTypedSuccessResponse({
+    message: 'Avatar uploaded successfully',
+    model: GoalkeeperModel,
+  })
+  @ApiCommonErrorResponses()
+  async uploadAvatar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: UploadedGoalkeeperAvatar | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    if (!file) {
+      throw new BadRequestException(
+        'Archivo imagen requerido (formatos: webp, png, jpeg)',
+      );
+    }
+    const data = await this.goalkeepersService.uploadAvatar(id, file, user);
+    return { success: true, message: 'Avatar uploaded successfully', data };
   }
 }

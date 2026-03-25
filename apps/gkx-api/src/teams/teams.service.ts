@@ -14,6 +14,7 @@ import { UserEntity } from '../users/user.entity';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 import { TeamEntity } from './team.entity';
+import { PlanLimitsService } from '../plan-limits/plan-limits.service';
 
 @Injectable()
 export class TeamsService {
@@ -26,12 +27,14 @@ export class TeamsService {
     private readonly usersRepository: Repository<UserEntity>,
     @InjectRepository(GoalkeeperEntity)
     private readonly goalkeepersRepository: Repository<GoalkeeperEntity>,
+    private readonly planLimitsService: PlanLimitsService,
   ) {}
 
   async create(dto: CreateTeamDto, actor: AuthenticatedUser) {
     const tenantId = this.resolveTenantIdForCreate(dto.tenantId, actor);
 
     await this.ensureTenantExists(tenantId);
+    await this.planLimitsService.assertWithinLimit(tenantId, 'teams');
     await this.ensureResponsibleBelongsToTenant(dto.coachId, tenantId);
 
     const entity = this.teamsRepository.create({
@@ -108,7 +111,9 @@ export class TeamsService {
     this.assertTenantAccess(goalkeeper.tenantId, actor);
 
     if (goalkeeper.tenantId !== team.tenantId) {
-      throw new BadRequestException('Goalkeeper and team must belong to the same tenant');
+      throw new BadRequestException(
+        'Goalkeeper and team must belong to the same tenant',
+      );
     }
 
     goalkeeper.teamId = team.id;
@@ -146,7 +151,9 @@ export class TeamsService {
   }
 
   private async ensureTenantExists(tenantId: string) {
-    const tenant = await this.tenantsRepository.findOne({ where: { id: tenantId } });
+    const tenant = await this.tenantsRepository.findOne({
+      where: { id: tenantId },
+    });
     if (!tenant) {
       throw new NotFoundException('Tenant not found');
     }
@@ -160,13 +167,17 @@ export class TeamsService {
       return;
     }
 
-    const responsibleUser = await this.usersRepository.findOne({ where: { id: responsibleUserId } });
+    const responsibleUser = await this.usersRepository.findOne({
+      where: { id: responsibleUserId },
+    });
     if (!responsibleUser) {
       throw new NotFoundException('Responsible user not found');
     }
 
     if (responsibleUser.tenantId !== tenantId) {
-      throw new BadRequestException('Responsible user does not belong to the provided tenant');
+      throw new BadRequestException(
+        'Responsible user does not belong to the provided tenant',
+      );
     }
   }
 }

@@ -1,4 +1,5 @@
 import { TeamsClient } from "@/features/teams/components/teams-client";
+import { requireServerRole } from "@/lib/auth/server-guard";
 import { extractArray } from "@/lib/api/response";
 import { queryKeys } from "@/lib/query/keys";
 import { createQueryClient } from "@/lib/query/query-client";
@@ -30,6 +31,8 @@ async function fetchAuthedArray(path: string, token: string | undefined) {
 }
 
 export default async function TeamsPage() {
+  await requireServerRole(["SUPER_ADMIN", "USER"]);
+
   const queryClient = createQueryClient();
   const token = (await cookies()).get("gkx_access_token")?.value;
 
