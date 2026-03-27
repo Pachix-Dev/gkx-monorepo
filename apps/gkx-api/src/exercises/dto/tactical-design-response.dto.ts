@@ -13,7 +13,9 @@ export class TacticalDesignResponseDto {
   @ApiProperty({ example: 1 })
   stateVersion!: number | null;
 
-  @ApiPropertyOptional({ example: 'https://storage.example.com/preview-abc123.webp' })
+  @ApiPropertyOptional({
+    example: 'https://storage.example.com/preview-abc123.webp',
+  })
   previewUrl?: string | null;
 
   @ApiProperty({ format: 'date-time' })

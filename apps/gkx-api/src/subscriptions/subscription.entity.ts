@@ -52,6 +52,24 @@ export class SubscriptionEntity {
   @Column({ type: 'timestamptz', nullable: true })
   canceledAt!: Date | null;
 
+  @Column({ type: 'boolean', default: false })
+  cancelAtPeriodEnd!: boolean;
+
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  stripeCustomerId!: string | null;
+
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  stripeSubscriptionId!: string | null;
+
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  stripeSubscriptionItemId!: string | null;
+
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  stripePriceId!: string | null;
+
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  stripeScheduleId!: string | null;
+
   @Column({ type: 'varchar', length: 200, nullable: true })
   externalRef!: string | null;
 

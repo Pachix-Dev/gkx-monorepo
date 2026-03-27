@@ -37,7 +37,10 @@ export class SessionContentsService {
       tenantId,
       actor,
     );
-    const content = await this.ensureContentBelongsToTenant(dto.trainingContentId, tenantId);
+    const content = await this.ensureContentBelongsToTenant(
+      dto.trainingContentId,
+      tenantId,
+    );
 
     if (content && !session.trainingContentIds.includes(content.id)) {
       throw new BadRequestException(
@@ -61,7 +64,9 @@ export class SessionContentsService {
     actor: AuthenticatedUser,
   ) {
     if (dto.sessionId !== sessionId) {
-      throw new BadRequestException('sessionId in body must match URL sessionId');
+      throw new BadRequestException(
+        'sessionId in body must match URL sessionId',
+      );
     }
 
     return this.create(dto, actor);
@@ -69,7 +74,9 @@ export class SessionContentsService {
 
   async findAll(actor: AuthenticatedUser) {
     if (actor.role === Role.SUPER_ADMIN) {
-      return this.sessionContentsRepository.find({ order: { createdAt: 'DESC' } });
+      return this.sessionContentsRepository.find({
+        order: { createdAt: 'DESC' },
+      });
     }
 
     return this.sessionContentsRepository
@@ -86,12 +93,16 @@ export class SessionContentsService {
   }
 
   async findOne(id: string, actor: AuthenticatedUser) {
-    const entity = await this.sessionContentsRepository.findOne({ where: { id } });
+    const entity = await this.sessionContentsRepository.findOne({
+      where: { id },
+    });
     if (!entity) {
       throw new NotFoundException('Session content not found');
     }
 
-    const session = await this.sessionsRepository.findOne({ where: { id: entity.sessionId } });
+    const session = await this.sessionsRepository.findOne({
+      where: { id: entity.sessionId },
+    });
     if (!session) {
       throw new NotFoundException('Training session not found');
     }
@@ -100,7 +111,9 @@ export class SessionContentsService {
   }
 
   async findBySession(sessionId: string, actor: AuthenticatedUser) {
-    const session = await this.sessionsRepository.findOne({ where: { id: sessionId } });
+    const session = await this.sessionsRepository.findOne({
+      where: { id: sessionId },
+    });
     if (!session) {
       throw new NotFoundException('Training session not found');
     }
@@ -113,7 +126,11 @@ export class SessionContentsService {
     });
   }
 
-  async update(id: string, dto: UpdateSessionContentDto, actor: AuthenticatedUser) {
+  async update(
+    id: string,
+    dto: UpdateSessionContentDto,
+    actor: AuthenticatedUser,
+  ) {
     const entity = await this.findOne(id, actor);
 
     if (dto.tenantId && dto.tenantId !== entity.tenantId) {
@@ -121,7 +138,8 @@ export class SessionContentsService {
     }
 
     const nextSessionId = dto.sessionId ?? entity.sessionId;
-    const nextTrainingContentId = dto.trainingContentId ?? entity.trainingContentId;
+    const nextTrainingContentId =
+      dto.trainingContentId ?? entity.trainingContentId;
 
     const session = await this.ensureSessionBelongsToTenant(
       nextSessionId,
@@ -162,11 +180,15 @@ export class SessionContentsService {
   ) {
     const entity = await this.findOne(id, actor);
     if (entity.sessionId !== sessionId) {
-      throw new BadRequestException('Session content does not belong to this session');
+      throw new BadRequestException(
+        'Session content does not belong to this session',
+      );
     }
 
     if (dto.sessionId && dto.sessionId !== sessionId) {
-      throw new BadRequestException('sessionId in body must match URL sessionId');
+      throw new BadRequestException(
+        'sessionId in body must match URL sessionId',
+      );
     }
 
     return this.update(id, { ...dto, sessionId }, actor);
@@ -178,10 +200,16 @@ export class SessionContentsService {
     return { deleted: true };
   }
 
-  async removeWithinSession(sessionId: string, id: string, actor: AuthenticatedUser) {
+  async removeWithinSession(
+    sessionId: string,
+    id: string,
+    actor: AuthenticatedUser,
+  ) {
     const entity = await this.findOne(id, actor);
     if (entity.sessionId !== sessionId) {
-      throw new BadRequestException('Session content does not belong to this session');
+      throw new BadRequestException(
+        'Session content does not belong to this session',
+      );
     }
 
     return this.remove(id, actor);
@@ -205,7 +233,10 @@ export class SessionContentsService {
     actor: AuthenticatedUser,
   ) {
     if (actor.role === Role.SUPER_ADMIN) return;
-    if (session.tenantId !== actor.tenantId || session.createdByUserId !== actor.userId) {
+    if (
+      session.tenantId !== actor.tenantId ||
+      session.createdByUserId !== actor.userId
+    ) {
       throw new ForbiddenException(
         'You can only access your own training sessions',
       );
@@ -213,7 +244,9 @@ export class SessionContentsService {
   }
 
   private async ensureTenantExists(tenantId: string) {
-    const tenant = await this.tenantsRepository.findOne({ where: { id: tenantId } });
+    const tenant = await this.tenantsRepository.findOne({
+      where: { id: tenantId },
+    });
     if (!tenant) throw new NotFoundException('Tenant not found');
   }
 
@@ -222,7 +255,9 @@ export class SessionContentsService {
     tenantId: string,
     actor: AuthenticatedUser,
   ) {
-    const session = await this.sessionsRepository.findOne({ where: { id: sessionId } });
+    const session = await this.sessionsRepository.findOne({
+      where: { id: sessionId },
+    });
     if (!session) throw new NotFoundException('Training session not found');
     if (session.tenantId !== tenantId) {
       throw new BadRequestException(
@@ -239,7 +274,9 @@ export class SessionContentsService {
   ) {
     if (!contentId) return null;
 
-    const content = await this.contentsRepository.findOne({ where: { id: contentId } });
+    const content = await this.contentsRepository.findOne({
+      where: { id: contentId },
+    });
     if (!content) throw new NotFoundException('Training content not found');
     if (content.tenantId !== tenantId) {
       throw new BadRequestException(

@@ -54,9 +54,7 @@ export class EvaluationsController {
   }
 
   @Get()
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar evaluaciones' })
   @ApiTypedSuccessResponse({
     message: 'Evaluations retrieved successfully',
@@ -66,13 +64,15 @@ export class EvaluationsController {
   @ApiCommonErrorResponses()
   async findAll(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.evaluationsService.findAll(user);
-    return { success: true, message: 'Evaluations retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Evaluations retrieved successfully',
+      data,
+    };
   }
 
   @Get('session/:sessionId')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar evaluaciones por sesion' })
   @ApiUuidParam('sessionId', 'Identificador de la sesion')
   @ApiTypedSuccessResponse({
@@ -86,30 +86,42 @@ export class EvaluationsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.evaluationsService.findBySession(sessionId, user);
-    return { success: true, message: 'Session evaluations retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Session evaluations retrieved successfully',
+      data,
+    };
   }
 
   @Get(':id')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Obtener evaluacion por id' })
   @ApiUuidParam('id', 'Identificador de la evaluacion')
-  @ApiTypedSuccessResponse({ message: 'Evaluation retrieved successfully', model: EvaluationModel })
+  @ApiTypedSuccessResponse({
+    message: 'Evaluation retrieved successfully',
+    model: EvaluationModel,
+  })
   @ApiCommonErrorResponses()
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.evaluationsService.findOne(id, user);
-    return { success: true, message: 'Evaluation retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Evaluation retrieved successfully',
+      data,
+    };
   }
 
   @Patch(':id')
   @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar evaluacion tecnica' })
   @ApiUuidParam('id', 'Identificador de la evaluacion')
-  @ApiTypedSuccessResponse({ message: 'Evaluation updated successfully', model: EvaluationModel })
+  @ApiTypedSuccessResponse({
+    message: 'Evaluation updated successfully',
+    model: EvaluationModel,
+  })
   @ApiCommonErrorResponses()
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -124,7 +136,10 @@ export class EvaluationsController {
   @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Eliminar evaluacion tecnica' })
   @ApiUuidParam('id', 'Identificador de la evaluacion')
-  @ApiTypedSuccessResponse({ message: 'Evaluation deleted successfully', model: DeleteDataModel })
+  @ApiTypedSuccessResponse({
+    message: 'Evaluation deleted successfully',
+    model: DeleteDataModel,
+  })
   @ApiCommonErrorResponses()
   async remove(
     @Param('id', ParseUUIDPipe) id: string,

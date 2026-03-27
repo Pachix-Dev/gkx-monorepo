@@ -51,5 +51,5 @@ Write-Host "Copia el valor signing secret (whsec_...) y guardalo en STRIPE_WEBHO
 Write-Host "" 
 
 & $stripePath listen `
-    --events "customer.subscription.created,customer.subscription.updated,customer.subscription.deleted" `
+    --events "checkout.session.completed,checkout.session.async_payment_succeeded,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted" `
     --forward-to $ForwardTo

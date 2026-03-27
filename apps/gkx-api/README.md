@@ -42,6 +42,17 @@ npm run lint
 
 Usar `.env` local basado en `.env.example`.
 
+Variables clave para suscripcion recurrente:
+
+```env
+STRIPE_SECRET_KEY="sk_test_xxx"
+STRIPE_WEBHOOK_SECRET="whsec_xxx"
+BILLING_BASE_URL="http://localhost:3001"
+STRIPE_PRICE_ID_BASIC="price_xxx"
+STRIPE_PRICE_ID_PRO="price_xxx"
+STRIPE_PRICE_ID_ENTERPRISE="price_xxx"
+```
+
 ## Probar webhook Stripe end-to-end
 
 Prerequisitos:
@@ -71,6 +82,7 @@ npm run stripe:webhook:trigger
 
 5. Validar en logs/API que se procese:
 
+- `checkout.session.completed`
 - `customer.subscription.created`
 - `customer.subscription.updated`
 - `customer.subscription.deleted`

@@ -24,27 +24,29 @@ export type SubscriptionEntity = {
   currentPeriodEnd: string;
   trialEndsAt: string | null;
   canceledAt: string | null;
+  cancelAtPeriodEnd: boolean;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  stripeSubscriptionItemId: string | null;
+  stripePriceId: string | null;
+    stripeScheduleId: string | null;
   externalRef: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
 export type UpdateSubscriptionInput = {
-  plan?: SubscriptionPlan;
-  status?: SubscriptionStatus;
-  currentPeriodStart?: string;
-  currentPeriodEnd?: string;
-  trialEndsAt?: string;
-  canceledAt?: string;
-  externalRef?: string;
+  status: SubscriptionStatus;
 };
 
 export type PlanOffer = {
   plan: SubscriptionPlan;
   label: string;
-  monthlyPriceMxn: number;
+  priceMxn: number;
+  billingInterval: "month" | "year";
   description: string;
   paymentMethods: PlanPaymentMethod[];
+  cardEnabled: boolean;
 };
 
 export type PlanChangeRequest = {
@@ -193,4 +195,74 @@ export async function reviewPlanChangeRequest(
   );
 
   return extractData<PlanChangeRequest>(response);
+}
+
+export async function createCustomerPortalSession(
+  tenantId: string,
+): Promise<{ url: string }> {
+  const response = await apiRequest<unknown>(
+    `/subscriptions/tenant/${tenantId}/customer-portal-session`,
+    {
+      method: "POST",
+      auth: true,
+    },
+  );
+
+  return extractData<{ url: string }>(response);
+}
+
+export async function cancelAutoRenew(tenantId: string): Promise<SubscriptionEntity> {
+  const response = await apiRequest<unknown>(
+    `/subscriptions/tenant/${tenantId}/cancel-auto-renew`,
+    {
+      method: "POST",
+      auth: true,
+    },
+  );
+
+  return extractData<SubscriptionEntity>(response);
+}
+
+export async function reactivateAutoRenew(
+  tenantId: string,
+): Promise<SubscriptionEntity> {
+  const response = await apiRequest<unknown>(
+    `/subscriptions/tenant/${tenantId}/reactivate-auto-renew`,
+    {
+      method: "POST",
+      auth: true,
+    },
+  );
+
+  return extractData<SubscriptionEntity>(response);
+}
+
+export async function scheduleStripeDowngrade(
+  tenantId: string,
+  plan: SubscriptionPlan,
+): Promise<SubscriptionEntity> {
+  const response = await apiRequest<unknown>(
+    `/subscriptions/tenant/${tenantId}/schedule-downgrade`,
+    {
+      method: "POST",
+      auth: true,
+      body: { plan },
+    },
+  );
+
+  return extractData<SubscriptionEntity>(response);
+}
+
+export async function cancelSpeiAtPeriodEnd(
+  tenantId: string,
+): Promise<SubscriptionEntity> {
+  const response = await apiRequest<unknown>(
+    `/subscriptions/tenant/${tenantId}/cancel-spei-at-period-end`,
+    {
+      method: "POST",
+      auth: true,
+    },
+  );
+
+  return extractData<SubscriptionEntity>(response);
 }

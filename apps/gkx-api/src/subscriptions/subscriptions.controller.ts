@@ -110,10 +110,12 @@ export class SubscriptionsController {
 
   @Get('plans')
   @Roles(Role.SUPER_ADMIN, Role.USER)
-  @ApiOperation({ summary: 'List available subscription plans and payment methods' })
+  @ApiOperation({
+    summary: 'List available subscription plans and payment methods',
+  })
   @ApiSuccessResponse({ message: 'Plan offers retrieved', isArray: true })
   @ApiCommonErrorResponses()
-  async getPlanOffers() {
+  getPlanOffers() {
     const data = this.subscriptionsService.getPlanOffers();
     return { success: true, message: 'Plan offers retrieved', data };
   }
@@ -137,17 +139,24 @@ export class SubscriptionsController {
   @Get('change-requests/my')
   @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'List plan change requests for current tenant' })
-  @ApiSuccessResponse({ message: 'Plan change requests retrieved', isArray: true })
+  @ApiSuccessResponse({
+    message: 'Plan change requests retrieved',
+    isArray: true,
+  })
   @ApiCommonErrorResponses()
   async getMyPlanChangeRequests(@CurrentUser() actor: AuthenticatedUser) {
-    const data = await this.subscriptionsService.findMyPlanChangeRequests(actor);
+    const data =
+      await this.subscriptionsService.findMyPlanChangeRequests(actor);
     return { success: true, message: 'Plan change requests retrieved', data };
   }
 
   @Get('change-requests')
   @Roles(Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'List plan change requests (SUPER_ADMIN only)' })
-  @ApiSuccessResponse({ message: 'Plan change requests retrieved', isArray: true })
+  @ApiSuccessResponse({
+    message: 'Plan change requests retrieved',
+    isArray: true,
+  })
   @ApiCommonErrorResponses()
   async findPlanChangeRequests(
     @CurrentUser() actor: AuthenticatedUser,
@@ -162,7 +171,9 @@ export class SubscriptionsController {
 
   @Patch('change-requests/:id/review')
   @Roles(Role.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Approve/reject SPEI plan change request (SUPER_ADMIN only)' })
+  @ApiOperation({
+    summary: 'Approve/reject SPEI plan change request (SUPER_ADMIN only)',
+  })
   @ApiUuidParam('id', 'Plan change request UUID')
   @ApiSuccessResponse({ message: 'Plan change request reviewed' })
   @ApiCommonErrorResponses()
@@ -199,5 +210,105 @@ export class SubscriptionsController {
       actor,
     );
     return { success: true, message: 'Plan changed successfully', data };
+  }
+
+  @Post('tenant/:tenantId/customer-portal-session')
+  @Roles(Role.SUPER_ADMIN, Role.USER)
+  @ApiOperation({ summary: 'Create a Stripe customer portal session' })
+  @ApiUuidParam('tenantId', 'Tenant UUID')
+  @ApiSuccessResponse({ message: 'Customer portal session created' })
+  @ApiCommonErrorResponses()
+  async createCustomerPortalSession(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    const data = await this.subscriptionsService.createCustomerPortalSession(
+      tenantId,
+      actor,
+    );
+    return { success: true, message: 'Customer portal session created', data };
+  }
+
+  @Post('tenant/:tenantId/cancel-auto-renew')
+  @Roles(Role.SUPER_ADMIN, Role.USER)
+  @ApiOperation({ summary: 'Cancel auto-renew at current period end' })
+  @ApiUuidParam('tenantId', 'Tenant UUID')
+  @ApiSuccessResponse({ message: 'Auto-renew canceled' })
+  @ApiCommonErrorResponses()
+  async cancelAutoRenew(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    const data = await this.subscriptionsService.cancelAutoRenew(
+      tenantId,
+      actor,
+    );
+    return { success: true, message: 'Auto-renew canceled', data };
+  }
+
+  @Post('tenant/:tenantId/reactivate-auto-renew')
+  @Roles(Role.SUPER_ADMIN, Role.USER)
+  @ApiOperation({
+    summary: 'Reactivate auto-renew for the current subscription',
+  })
+  @ApiUuidParam('tenantId', 'Tenant UUID')
+  @ApiSuccessResponse({ message: 'Auto-renew reactivated' })
+  @ApiCommonErrorResponses()
+  async reactivateAutoRenew(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    const data = await this.subscriptionsService.reactivateAutoRenew(
+      tenantId,
+      actor,
+    );
+    return { success: true, message: 'Auto-renew reactivated', data };
+  }
+
+  @Post('tenant/:tenantId/schedule-downgrade')
+  @Roles(Role.SUPER_ADMIN, Role.USER)
+  @ApiOperation({
+    summary: 'Schedule a Stripe plan downgrade at current period end',
+  })
+  @ApiUuidParam('tenantId', 'Tenant UUID')
+  @ApiSuccessResponse({ message: 'Downgrade scheduled' })
+  @ApiCommonErrorResponses()
+  async scheduleStripeDowngrade(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Body() dto: ChangePlanDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    const data = await this.subscriptionsService.scheduleStripeDowngrade(
+      tenantId,
+      dto.plan,
+      actor,
+    );
+    return { success: true, message: 'Downgrade scheduled', data };
+  }
+
+  @Post('tenant/:tenantId/cancel-spei-at-period-end')
+  @Roles(Role.SUPER_ADMIN)
+  @ApiOperation({
+    summary:
+      'Cancel a SPEI subscription at current period end (SUPER_ADMIN only)',
+  })
+  @ApiUuidParam('tenantId', 'Tenant UUID')
+  @ApiSuccessResponse({
+    message: 'SPEI subscription marked to cancel at period end',
+  })
+  @ApiCommonErrorResponses()
+  async cancelSpeiAtPeriodEnd(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    const data = await this.subscriptionsService.cancelSpeiAtPeriodEnd(
+      tenantId,
+      actor,
+    );
+    return {
+      success: true,
+      message: 'SPEI subscription marked to cancel at period end',
+      data,
+    };
   }
 }

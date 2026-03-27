@@ -104,7 +104,10 @@ export class ExercisesService {
     }
 
     if (dto.trainingContentId) {
-      await this.ensureContentBelongsToTenant(dto.trainingContentId, entity.tenantId);
+      await this.ensureContentBelongsToTenant(
+        dto.trainingContentId,
+        entity.tenantId,
+      );
     }
 
     Object.assign(entity, {
@@ -137,7 +140,9 @@ export class ExercisesService {
       state: entity.tacticalState ?? null,
       stateVersion: entity.tacticalStateVersion ?? 1,
       previewUrl: entity.tacticalPreviewUrl ?? null,
-      updatedAt: entity.tacticalUpdatedAt?.toISOString() ?? entity.updatedAt?.toISOString(),
+      updatedAt:
+        entity.tacticalUpdatedAt?.toISOString() ??
+        entity.updatedAt?.toISOString(),
     };
   }
 
@@ -150,11 +155,13 @@ export class ExercisesService {
 
     // Use state hash for tactical hash tracking (to detect changes)
     const stateHash = this.calculateHash(dto.state);
-    const previewHash = dto.previewHash ?? this.calculateHash(dto.previewUrl ?? '');
+    const previewHash =
+      dto.previewHash ?? this.calculateHash(dto.previewUrl ?? '');
 
     Object.assign(entity, {
       tacticalState: dto.state,
-      tacticalStateVersion: dto.stateVersion ?? (entity.tacticalStateVersion ?? 0) + 1,
+      tacticalStateVersion:
+        dto.stateVersion ?? (entity.tacticalStateVersion ?? 0) + 1,
       tacticalPreviewUrl: dto.previewUrl ?? entity.tacticalPreviewUrl,
       tacticalHash: stateHash || previewHash,
       tacticalUpdatedAt: new Date(),
@@ -196,7 +203,9 @@ export class ExercisesService {
       state: entity.tacticalState ?? null,
       stateVersion: entity.tacticalStateVersion ?? 1,
       previewUrl: entity.tacticalPreviewUrl,
-      updatedAt: entity.tacticalUpdatedAt?.toISOString() ?? entity.updatedAt?.toISOString(),
+      updatedAt:
+        entity.tacticalUpdatedAt?.toISOString() ??
+        entity.updatedAt?.toISOString(),
     };
   }
 
@@ -229,7 +238,9 @@ export class ExercisesService {
   }
 
   private async ensureTenantExists(tenantId: string) {
-    const tenant = await this.tenantsRepository.findOne({ where: { id: tenantId } });
+    const tenant = await this.tenantsRepository.findOne({
+      where: { id: tenantId },
+    });
     if (!tenant) throw new NotFoundException('Tenant not found');
   }
 

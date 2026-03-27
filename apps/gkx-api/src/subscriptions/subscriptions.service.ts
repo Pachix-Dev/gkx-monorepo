@@ -13,11 +13,15 @@ import { TenantEntity, TenantPlan } from '../tenants/tenant.entity';
 import { CreatePlanChangeRequestDto } from './dto/create-plan-change-request.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import {
+  mapStripePriceToPlan,
+  getPlanOffers,
+  getRecurringPlanPriceId,
+} from './plan-offers.config';
+import {
   PlanChangeRequestEntity,
   PlanChangeRequestStatus,
   PlanPaymentMethod,
 } from './plan-change-request.entity';
-import { getPlanOffers } from './plan-offers.config';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { SubscriptionEntity, SubscriptionStatus } from './subscription.entity';
 
@@ -40,12 +44,46 @@ type StripeClient = {
         id: string;
         url: string | null;
       }>;
+      retrieve: (sessionId: string) => Promise<Record<string, unknown>>;
     };
+  };
+  subscriptions: {
+    retrieve: (subscriptionId: string) => Promise<Record<string, unknown>>;
+    update: (
+      subscriptionId: string,
+      payload: Record<string, unknown>,
+    ) => Promise<Record<string, unknown>>;
+  };
+  billingPortal: {
+    sessions: {
+      create: (payload: Record<string, unknown>) => Promise<{ url: string }>;
+    };
+  };
+};
+
+type StripeScheduleClient = {
+  subscriptionSchedules: {
+    create: (
+      payload: Record<string, unknown>,
+    ) => Promise<Record<string, unknown>>;
+    retrieve: (id: string) => Promise<Record<string, unknown>>;
+    update: (
+      id: string,
+      payload: Record<string, unknown>,
+    ) => Promise<Record<string, unknown>>;
+    cancel: (id: string) => Promise<Record<string, unknown>>;
   };
 };
 
 type StripeModule = {
   default: new (apiKey: string) => StripeClient;
+};
+
+const PLAN_ORDER: Record<TenantPlan, number> = {
+  [TenantPlan.FREE]: 0,
+  [TenantPlan.BASIC]: 1,
+  [TenantPlan.PRO]: 2,
+  [TenantPlan.ENTERPRISE]: 3,
 };
 
 @Injectable()
@@ -71,20 +109,35 @@ export class SubscriptionsService {
     });
     if (!tenant) throw new NotFoundException('Tenant not found');
 
+    const currentPeriodStart = this.parseIsoDateOrThrow(
+      dto.currentPeriodStart,
+      'currentPeriodStart',
+    );
+    const currentPeriodEnd = this.parseIsoDateOrThrow(
+      dto.currentPeriodEnd,
+      'currentPeriodEnd',
+    );
+    this.assertValidPeriodRange(currentPeriodStart, currentPeriodEnd);
+
     const subscription = this.subscriptionsRepository.create({
       tenantId: dto.tenantId,
       plan: dto.plan,
       status: dto.status ?? SubscriptionStatus.TRIALING,
-      currentPeriodStart: new Date(dto.currentPeriodStart),
-      currentPeriodEnd: new Date(dto.currentPeriodEnd),
+      currentPeriodStart,
+      currentPeriodEnd,
       trialEndsAt: dto.trialEndsAt ? new Date(dto.trialEndsAt) : null,
       canceledAt: null,
+      cancelAtPeriodEnd: false,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      stripeSubscriptionItemId: null,
+      stripePriceId: null,
+      stripeScheduleId: null,
       externalRef: dto.externalRef ?? null,
     });
 
     const saved = await this.subscriptionsRepository.save(subscription);
 
-    // sync tenant plan
     tenant.plan = dto.plan;
     await this.tenantsRepository.save(tenant);
 
@@ -121,7 +174,8 @@ export class SubscriptionsService {
       subs.find(
         (s) =>
           s.status === SubscriptionStatus.ACTIVE ||
-          s.status === SubscriptionStatus.TRIALING,
+          s.status === SubscriptionStatus.TRIALING ||
+          (s.status === SubscriptionStatus.CANCELED && s.cancelAtPeriodEnd),
       ) ?? null
     );
   }
@@ -138,31 +192,13 @@ export class SubscriptionsService {
     });
     if (!subscription) throw new NotFoundException('Subscription not found');
 
-    if (dto.plan !== undefined) subscription.plan = dto.plan;
-    if (dto.status !== undefined) subscription.status = dto.status;
-    if (dto.currentPeriodStart !== undefined)
-      subscription.currentPeriodStart = new Date(dto.currentPeriodStart);
-    if (dto.currentPeriodEnd !== undefined)
-      subscription.currentPeriodEnd = new Date(dto.currentPeriodEnd);
-    if (dto.trialEndsAt !== undefined)
-      subscription.trialEndsAt = new Date(dto.trialEndsAt);
-    if (dto.canceledAt !== undefined)
-      subscription.canceledAt = new Date(dto.canceledAt);
-    if (dto.externalRef !== undefined)
-      subscription.externalRef = dto.externalRef;
+    if (dto.status === undefined) {
+      throw new BadRequestException('status is required');
+    }
+
+    subscription.status = dto.status;
 
     const saved = await this.subscriptionsRepository.save(subscription);
-
-    // sync tenant plan when plan changes
-    if (dto.plan !== undefined) {
-      const tenant = await this.tenantsRepository.findOne({
-        where: { id: subscription.tenantId },
-      });
-      if (tenant) {
-        tenant.plan = dto.plan;
-        await this.tenantsRepository.save(tenant);
-      }
-    }
 
     return saved;
   }
@@ -188,11 +224,34 @@ export class SubscriptionsService {
   ) {
     const tenantId = this.resolveTargetTenantId(dto.tenantId, actor);
 
-    const tenant = await this.tenantsRepository.findOne({ where: { id: tenantId } });
+    const tenant = await this.tenantsRepository.findOne({
+      where: { id: tenantId },
+    });
     if (!tenant) throw new NotFoundException('Tenant not found');
 
     if (dto.plan === TenantPlan.FREE) {
-      throw new BadRequestException('Use FREE only for internal/manual ops');
+      throw new BadRequestException('Use FREE only for cancel/downgrade flow');
+    }
+
+    const activeSubscription =
+      await this.findLatestTenantSubscription(tenantId);
+    const currentPlan = activeSubscription?.plan ?? tenant.plan;
+
+    const currentRank = PLAN_ORDER[currentPlan] ?? 0;
+    const requestedRank = PLAN_ORDER[dto.plan] ?? 0;
+    const isDowngrade = requestedRank < currentRank;
+
+    if (dto.paymentMethod === PlanPaymentMethod.CARD) {
+      if (isDowngrade) {
+        throw new BadRequestException(
+          'Card plan downgrades must use the schedule-downgrade endpoint',
+        );
+      }
+      this.assertUpgradeOnly(currentPlan, dto.plan);
+    } else if (requestedRank === currentRank) {
+      throw new BadRequestException(
+        'Cannot request the same plan you currently have',
+      );
     }
 
     const request = this.planChangeRequestsRepository.create({
@@ -217,19 +276,112 @@ export class SubscriptionsService {
       return {
         request: saved,
         instructions:
-          'Pago por SPEI registrado. SUPER_ADMIN validara el pago y activara el plan.',
+          'Pago por SPEI registrado. SUPER_ADMIN validara el pago y activara el plan manualmente.',
       };
     }
 
-    const checkoutUrl = await this.createCardCheckoutSession(saved);
+    const cardResult = await this.handleCardPlanChange(
+      saved,
+      activeSubscription,
+    );
 
-    saved.stripeCheckoutSessionId = checkoutUrl.sessionId;
-    await this.planChangeRequestsRepository.save(saved);
+    if (cardResult.mode === 'checkout') {
+      saved.stripeCheckoutSessionId = cardResult.sessionId;
+      await this.planChangeRequestsRepository.save(saved);
+
+      return {
+        request: saved,
+        checkoutUrl: cardResult.url,
+      };
+    }
+
+    const refreshed = await this.planChangeRequestsRepository.findOne({
+      where: { id: saved.id },
+    });
 
     return {
-      request: saved,
-      checkoutUrl: checkoutUrl.url,
+      request: refreshed ?? saved,
+      instructions: 'Plan actualizado con prorrateo inmediato.',
     };
+  }
+
+  async createCustomerPortalSession(
+    tenantId: string,
+    actor: AuthenticatedUser,
+  ) {
+    this.assertTenantAccess(tenantId, actor);
+
+    const subscription = await this.findLatestTenantSubscription(tenantId);
+    if (!subscription?.stripeCustomerId) {
+      throw new BadRequestException(
+        'No Stripe customer linked to this tenant subscription',
+      );
+    }
+
+    const stripe = await this.getStripeClient();
+    const billingBaseUrl =
+      process.env.BILLING_BASE_URL?.trim() ?? 'http://localhost:3001';
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: subscription.stripeCustomerId,
+      return_url: `${billingBaseUrl}/billing`,
+    });
+
+    return { url: session.url };
+  }
+
+  async cancelAutoRenew(tenantId: string, actor: AuthenticatedUser) {
+    this.assertTenantAccess(tenantId, actor);
+
+    const subscription = await this.findLatestTenantSubscription(tenantId);
+    if (!subscription?.stripeSubscriptionId) {
+      throw new BadRequestException('No recurrent Stripe subscription found');
+    }
+
+    const stripe = await this.getStripeClient();
+
+    const subscriptionScheduleId = this.readString(
+      subscription.stripeScheduleId,
+    );
+    if (subscriptionScheduleId) {
+      try {
+        await (
+          stripe as unknown as StripeScheduleClient
+        ).subscriptionSchedules.cancel(subscriptionScheduleId);
+      } catch {
+        /* ignore if already released/canceled */
+      }
+      subscription.stripeScheduleId = null;
+      await this.subscriptionsRepository.save(subscription);
+    }
+
+    const updated = await stripe.subscriptions.update(
+      subscription.stripeSubscriptionId,
+      {
+        cancel_at_period_end: true,
+      },
+    );
+
+    return this.syncStripeSubscription(updated);
+  }
+
+  async reactivateAutoRenew(tenantId: string, actor: AuthenticatedUser) {
+    this.assertTenantAccess(tenantId, actor);
+
+    const subscription = await this.findLatestTenantSubscription(tenantId);
+    if (!subscription?.stripeSubscriptionId) {
+      throw new BadRequestException('No recurrent Stripe subscription found');
+    }
+
+    const stripe = await this.getStripeClient();
+    const updated = await stripe.subscriptions.update(
+      subscription.stripeSubscriptionId,
+      {
+        cancel_at_period_end: false,
+      },
+    );
+
+    return this.syncStripeSubscription(updated);
   }
 
   async findMyPlanChangeRequests(actor: AuthenticatedUser) {
@@ -260,11 +412,15 @@ export class SubscriptionsService {
   ) {
     this.assertSuperAdmin(actor);
 
-    const request = await this.planChangeRequestsRepository.findOne({ where: { id } });
+    const request = await this.planChangeRequestsRepository.findOne({
+      where: { id },
+    });
     if (!request) throw new NotFoundException('Plan change request not found');
 
     if (request.paymentMethod !== PlanPaymentMethod.SPEI) {
-      throw new BadRequestException('Only SPEI requests can be reviewed manually');
+      throw new BadRequestException(
+        'Only SPEI requests can be reviewed manually',
+      );
     }
 
     if (request.status !== PlanChangeRequestStatus.PENDING_REVIEW) {
@@ -280,7 +436,82 @@ export class SubscriptionsService {
       return this.planChangeRequestsRepository.save(request);
     }
 
-    await this.applyPlanToTenant(request.tenantId, request.requestedPlan, 'spei-manual-approval');
+    // Capture existing Stripe subscription before applying new plan
+    const existingSubscription = await this.findLatestTenantSubscription(
+      request.tenantId,
+    );
+    const existingStripeSubId =
+      existingSubscription?.stripeSubscriptionId ?? null;
+    const existingScheduleId = this.readString(
+      existingSubscription?.stripeScheduleId,
+    );
+
+    const tenant = await this.tenantsRepository.findOne({
+      where: { id: request.tenantId },
+    });
+    if (!tenant) {
+      throw new NotFoundException('Tenant not found');
+    }
+
+    const currentPlan = existingSubscription?.plan ?? tenant.plan;
+    const currentRank = PLAN_ORDER[currentPlan] ?? 0;
+    const requestedRank = PLAN_ORDER[request.requestedPlan] ?? 0;
+    const isDowngrade = requestedRank < currentRank;
+
+    if (isDowngrade) {
+      if (existingStripeSubId) {
+        const stripe = await this.getStripeClient();
+        if (existingScheduleId) {
+          try {
+            await (
+              stripe as unknown as StripeScheduleClient
+            ).subscriptionSchedules.cancel(existingScheduleId);
+          } catch {
+            /* schedule may already be released/canceled */
+          }
+        }
+        await stripe.subscriptions.update(existingStripeSubId, {
+          cancel_at_period_end: true,
+        });
+      }
+
+      if (existingSubscription) {
+        existingSubscription.cancelAtPeriodEnd = true;
+        await this.subscriptionsRepository.save(existingSubscription);
+      }
+
+      request.status = PlanChangeRequestStatus.COMPLETED;
+      request.reviewNotes =
+        'SPEI downgrade approved. Current plan remains active until period end; renewal must be manually approved.';
+      return this.planChangeRequestsRepository.save(request);
+    }
+
+    await this.applyPlanToTenant(
+      request.tenantId,
+      request.requestedPlan,
+      'spei-manual-approval',
+    );
+
+    // Cancel the Stripe subscription at period end to prevent double billing
+    if (existingStripeSubId) {
+      const stripe = await this.getStripeClient();
+      if (existingScheduleId) {
+        try {
+          await (
+            stripe as unknown as StripeScheduleClient
+          ).subscriptionSchedules.cancel(existingScheduleId);
+        } catch {
+          /* schedule may already be released/canceled */
+        }
+      }
+      try {
+        await stripe.subscriptions.update(existingStripeSubId, {
+          cancel_at_period_end: true,
+        });
+      } catch {
+        /* don't fail the SPEI approval if Stripe call errors */
+      }
+    }
 
     request.status = PlanChangeRequestStatus.COMPLETED;
     return this.planChangeRequestsRepository.save(request);
@@ -305,70 +536,8 @@ export class SubscriptionsService {
       return { applied: false, reason: 'Unhandled event type' };
     }
 
-    const externalRef = this.readString(payload.id);
-    const metadata = payload.metadata as Record<string, unknown> | undefined;
-    const tenantId =
-      this.readString(metadata?.tenantId) ?? this.readString(payload.tenantId);
-
-    if (!externalRef || !tenantId) {
-      return { applied: false, reason: 'Missing subscription id or tenant id' };
-    }
-
-    const tenant = await this.tenantsRepository.findOne({
-      where: { id: tenantId },
-    });
-    if (!tenant) {
-      return { applied: false, reason: 'Tenant not found' };
-    }
-
-    const existing = await this.subscriptionsRepository.findOne({
-      where: { externalRef },
-      order: { createdAt: 'DESC' },
-    });
-
-    const stripePlanRaw = this.readString(
-      (payload.items as { data?: Array<Record<string, unknown>> } | undefined)
-        ?.data?.[0]?.price,
-    );
-
-    const status = this.mapStripeStatus(
-      this.readString(payload.status) ?? 'incomplete',
-    );
-
-    const subscription = existing
-      ? existing
-      : this.subscriptionsRepository.create({
-          tenantId,
-          externalRef,
-          plan: tenant.plan,
-          status,
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: new Date(),
-          trialEndsAt: null,
-          canceledAt: null,
-        });
-
-    subscription.status = status;
-    subscription.plan =
-      this.mapStripePlanToTenantPlan(stripePlanRaw) ?? tenant.plan;
-    subscription.currentPeriodStart = this.toDateOrFallback(
-      payload.current_period_start,
-      subscription.currentPeriodStart,
-    );
-    subscription.currentPeriodEnd = this.toDateOrFallback(
-      payload.current_period_end,
-      subscription.currentPeriodEnd,
-    );
-    subscription.trialEndsAt = this.toDateOrNull(payload.trial_end);
-    subscription.canceledAt = this.toDateOrNull(payload.canceled_at);
-    subscription.externalRef = externalRef;
-
-    const saved = await this.subscriptionsRepository.save(subscription);
-
-    tenant.plan = saved.plan;
-    await this.tenantsRepository.save(tenant);
-
-    return { applied: true, subscriptionId: saved.id };
+    const synced = await this.syncStripeSubscription(payload);
+    return { applied: true, subscriptionId: synced.id };
   }
 
   private assertSuperAdmin(actor: AuthenticatedUser) {
@@ -402,11 +571,7 @@ export class SubscriptionsService {
       throw new BadRequestException('Missing raw webhook body');
     }
 
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
-    const stripeModule = (await import('stripe')) as unknown as StripeModule;
-    const stripe = new stripeModule.default(
-      stripeSecretKey || 'sk_test_placeholder',
-    );
+    const stripe = await this.getStripeClient();
 
     try {
       return stripe.webhooks.constructEvent(rawBody, signature, secret);
@@ -427,47 +592,141 @@ export class SubscriptionsService {
     });
     if (!request) return false;
 
-    if (request.status !== PlanChangeRequestStatus.PENDING_PAYMENT) {
-      return false;
-    }
-
-    await this.applyPlanToTenant(
-      request.tenantId,
-      request.requestedPlan,
-      this.readString(payload.id) ?? 'stripe-checkout',
-    );
-
-    request.status = PlanChangeRequestStatus.COMPLETED;
     request.stripeCheckoutSessionId =
       this.readString(payload.id) ?? request.stripeCheckoutSessionId;
     request.stripePaymentIntentId =
       this.readString(payload.payment_intent) ?? request.stripePaymentIntentId;
-    request.reviewedAt = new Date();
-    request.reviewNotes = 'Auto-completed by Stripe checkout.session.completed';
 
-    await this.planChangeRequestsRepository.save(request);
-    return true;
-  }
-
-  private async createCardCheckoutSession(request: PlanChangeRequestEntity) {
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
-    if (!stripeSecretKey) {
-      throw new BadRequestException('Missing STRIPE_SECRET_KEY');
+    const stripeSubscriptionId = this.readString(payload.subscription);
+    if (!stripeSubscriptionId) {
+      await this.planChangeRequestsRepository.save(request);
+      return true;
     }
 
+    const stripe = await this.getStripeClient();
+    const stripeSubscription =
+      await stripe.subscriptions.retrieve(stripeSubscriptionId);
+
+    const synced = await this.syncStripeSubscription(stripeSubscription);
+
+    if (request.status === PlanChangeRequestStatus.PENDING_PAYMENT) {
+      request.status = PlanChangeRequestStatus.COMPLETED;
+      request.reviewedAt = new Date();
+      request.reviewNotes =
+        'Auto-completed by Stripe checkout.session.completed';
+      await this.planChangeRequestsRepository.save(request);
+    }
+
+    return Boolean(synced.id);
+  }
+
+  private async handleCardPlanChange(
+    request: PlanChangeRequestEntity,
+    activeSubscription: SubscriptionEntity | null,
+  ): Promise<
+    | {
+        mode: 'checkout';
+        sessionId: string;
+        url: string;
+      }
+    | {
+        mode: 'upgrade';
+      }
+  > {
+    const priceId = getRecurringPlanPriceId(request.requestedPlan);
+    if (!priceId) {
+      throw new BadRequestException(
+        `Missing STRIPE_PRICE_ID_${request.requestedPlan} for recurring checkout`,
+      );
+    }
+
+    if (
+      activeSubscription?.stripeSubscriptionId &&
+      (activeSubscription.status === SubscriptionStatus.ACTIVE ||
+        activeSubscription.status === SubscriptionStatus.TRIALING ||
+        (activeSubscription.status === SubscriptionStatus.CANCELED &&
+          activeSubscription.cancelAtPeriodEnd))
+    ) {
+      await this.upgradeExistingStripeSubscription(
+        request,
+        activeSubscription,
+        priceId,
+      );
+      return { mode: 'upgrade' };
+    }
+
+    const checkout = await this.createCardCheckoutSession(request, priceId);
+
+    return {
+      mode: 'checkout',
+      sessionId: checkout.sessionId,
+      url: checkout.url,
+    };
+  }
+
+  private async upgradeExistingStripeSubscription(
+    request: PlanChangeRequestEntity,
+    activeSubscription: SubscriptionEntity,
+    targetPriceId: string,
+  ) {
+    const stripe = await this.getStripeClient();
+
+    // Cancel any scheduled downgrade before proceeding with the upgrade
+    const activeScheduleId = this.readString(
+      activeSubscription.stripeScheduleId,
+    );
+    if (activeScheduleId) {
+      try {
+        await (
+          stripe as unknown as StripeScheduleClient
+        ).subscriptionSchedules.cancel(activeScheduleId);
+      } catch {
+        /* ignore if already released/canceled */
+      }
+      activeSubscription.stripeScheduleId = null;
+      await this.subscriptionsRepository.save(activeSubscription);
+    }
+
+    const subscriptionItemId = activeSubscription.stripeSubscriptionItemId;
+    if (!subscriptionItemId) {
+      throw new BadRequestException(
+        'Existing Stripe subscription item is missing for this tenant',
+      );
+    }
+
+    const updated = await stripe.subscriptions.update(
+      activeSubscription.stripeSubscriptionId as string,
+      {
+        cancel_at_period_end: false,
+        proration_behavior: 'create_prorations',
+        items: [{ id: subscriptionItemId, price: targetPriceId }],
+        metadata: {
+          tenantId: request.tenantId,
+          requestedPlan: request.requestedPlan,
+          planChangeRequestId: request.id,
+        },
+      },
+    );
+
+    await this.syncStripeSubscription(updated);
+
+    request.status = PlanChangeRequestStatus.COMPLETED;
+    request.reviewedAt = new Date();
+    request.reviewNotes = 'Auto-completed by Stripe proration upgrade';
+    await this.planChangeRequestsRepository.save(request);
+  }
+
+  private async createCardCheckoutSession(
+    request: PlanChangeRequestEntity,
+    priceId: string,
+  ) {
     const billingBaseUrl =
       process.env.BILLING_BASE_URL?.trim() ?? 'http://localhost:3001';
 
-    const offer = getPlanOffers().find((item) => item.plan === request.requestedPlan);
-    if (!offer) {
-      throw new BadRequestException('Plan offer not configured');
-    }
-
-    const stripeModule = (await import('stripe')) as unknown as StripeModule;
-    const stripe = new stripeModule.default(stripeSecretKey);
+    const stripe = await this.getStripeClient();
 
     const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
+      mode: 'subscription',
       payment_method_types: ['card'],
       success_url: `${billingBaseUrl}/billing?payment=success`,
       cancel_url: `${billingBaseUrl}/billing?payment=cancelled`,
@@ -476,17 +735,17 @@ export class SubscriptionsService {
         requestedPlan: request.requestedPlan,
         planChangeRequestId: request.id,
       },
+      subscription_data: {
+        metadata: {
+          tenantId: request.tenantId,
+          requestedPlan: request.requestedPlan,
+          planChangeRequestId: request.id,
+        },
+      },
       line_items: [
         {
           quantity: 1,
-          price_data: {
-            currency: 'mxn',
-            unit_amount: Math.round(offer.monthlyPriceMxn * 100),
-            product_data: {
-              name: `GKX ${offer.label} plan`,
-              description: `Cambio de plan a ${offer.label}`,
-            },
-          },
+          price: priceId,
         },
       ],
     });
@@ -521,36 +780,33 @@ export class SubscriptionsService {
     plan: TenantPlan,
     externalRef: string,
   ): Promise<SubscriptionEntity> {
-    const tenant = await this.tenantsRepository.findOne({ where: { id: tenantId } });
+    const tenant = await this.tenantsRepository.findOne({
+      where: { id: tenantId },
+    });
     if (!tenant) throw new NotFoundException('Tenant not found');
 
     const now = new Date();
     const periodEnd = new Date(now);
     periodEnd.setMonth(periodEnd.getMonth() + 1);
 
-    const subscription = await this.subscriptionsRepository.findOne({
-      where: { tenantId },
-      order: { createdAt: 'DESC' },
+    // Always create a new record so existing Stripe-linked records are not overwritten
+    // and can continue syncing independently via webhooks.
+    const target = this.subscriptionsRepository.create({
+      tenantId,
+      plan,
+      status: SubscriptionStatus.ACTIVE,
+      currentPeriodStart: now,
+      currentPeriodEnd: periodEnd,
+      trialEndsAt: null,
+      canceledAt: null,
+      cancelAtPeriodEnd: false,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      stripeSubscriptionItemId: null,
+      stripePriceId: null,
+      stripeScheduleId: null,
+      externalRef,
     });
-
-    const target =
-      subscription ??
-      this.subscriptionsRepository.create({
-        tenantId,
-        plan,
-        status: SubscriptionStatus.ACTIVE,
-        currentPeriodStart: now,
-        currentPeriodEnd: periodEnd,
-        trialEndsAt: null,
-        canceledAt: null,
-        externalRef,
-      });
-
-    target.plan = plan;
-    target.status = SubscriptionStatus.ACTIVE;
-    target.currentPeriodStart = now;
-    target.currentPeriodEnd = periodEnd;
-    target.externalRef = externalRef;
 
     const saved = await this.subscriptionsRepository.save(target);
 
@@ -558,6 +814,27 @@ export class SubscriptionsService {
     await this.tenantsRepository.save(tenant);
 
     return saved;
+  }
+
+  private async findLatestTenantSubscription(tenantId: string) {
+    return this.subscriptionsRepository.findOne({
+      where: { tenantId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  private assertUpgradeOnly(
+    currentPlan: TenantPlan,
+    requestedPlan: TenantPlan,
+  ) {
+    const currentRank = PLAN_ORDER[currentPlan] ?? 0;
+    const requestedRank = PLAN_ORDER[requestedPlan] ?? 0;
+
+    if (requestedRank <= currentRank) {
+      throw new BadRequestException(
+        'You can only purchase a higher plan than your current plan',
+      );
+    }
   }
 
   private mapStripeStatus(raw: string): SubscriptionStatus {
@@ -578,8 +855,140 @@ export class SubscriptionsService {
     }
   }
 
+  private async syncStripeSubscription(payload: Record<string, unknown>) {
+    const externalRef = this.readString(payload.id);
+    const metadata = payload.metadata as Record<string, unknown> | undefined;
+    const tenantId = this.readString(metadata?.tenantId);
+
+    if (!externalRef || !tenantId) {
+      throw new BadRequestException(
+        'Missing Stripe subscription id or tenant id',
+      );
+    }
+
+    const tenant = await this.tenantsRepository.findOne({
+      where: { id: tenantId },
+    });
+    if (!tenant) {
+      throw new NotFoundException('Tenant not found');
+    }
+
+    const existing =
+      (await this.subscriptionsRepository.findOne({
+        where: { stripeSubscriptionId: externalRef },
+        order: { createdAt: 'DESC' },
+      })) ?? (await this.findLatestTenantSubscription(tenantId));
+
+    const status = this.mapStripeStatus(
+      this.readString(payload.status) ?? 'incomplete',
+    );
+
+    const items = payload.items as
+      | { data?: Array<Record<string, unknown>> }
+      | undefined;
+    const firstItem = items?.data?.[0];
+
+    const stripePriceId = this.readString(firstItem?.price);
+    const stripeSubscriptionItemId = this.readString(firstItem?.id);
+
+    const planFromPrice = mapStripePriceToPlan(stripePriceId);
+    const planFromMetadata = this.mapStripePlanToTenantPlan(
+      this.readString(metadata?.requestedPlan),
+    );
+
+    const plan =
+      planFromPrice ??
+      planFromMetadata ??
+      this.mapStripePlanToTenantPlan(this.readString(payload.plan)) ??
+      tenant.plan;
+
+    const subscription =
+      existing ??
+      this.subscriptionsRepository.create({
+        tenantId,
+        externalRef,
+        plan,
+        status,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(),
+        trialEndsAt: null,
+        canceledAt: null,
+        cancelAtPeriodEnd: false,
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        stripeSubscriptionItemId: null,
+        stripePriceId: null,
+        stripeScheduleId: null,
+      });
+
+    subscription.status = status;
+    subscription.plan = plan;
+    subscription.currentPeriodStart = this.toDateOrFallback(
+      payload.current_period_start,
+      subscription.currentPeriodStart,
+    );
+    subscription.currentPeriodEnd = this.toDateOrFallback(
+      payload.current_period_end,
+      subscription.currentPeriodEnd,
+    );
+    subscription.trialEndsAt = this.toDateOrNull(payload.trial_end);
+    subscription.canceledAt = this.toDateOrNull(payload.canceled_at);
+    subscription.cancelAtPeriodEnd = Boolean(payload.cancel_at_period_end);
+    subscription.stripeCustomerId = this.readString(payload.customer);
+    subscription.stripeSubscriptionId = externalRef;
+    subscription.stripeSubscriptionItemId = stripeSubscriptionItemId;
+    subscription.stripePriceId = stripePriceId;
+    subscription.externalRef = externalRef;
+
+    const saved = await this.subscriptionsRepository.save(subscription);
+
+    // Only update tenant.plan if this is the most recent subscription.
+    // A newer SPEI-based record (created by applyPlanToTenant) takes precedence.
+    const latestSub = await this.findLatestTenantSubscription(tenantId);
+    if (!latestSub || latestSub.id === saved.id) {
+      tenant.plan =
+        status === SubscriptionStatus.CANCELED &&
+        saved.currentPeriodEnd.getTime() <= Date.now()
+          ? TenantPlan.FREE
+          : saved.plan;
+      await this.tenantsRepository.save(tenant);
+    }
+
+    const requestId = this.readString(metadata?.planChangeRequestId);
+    if (requestId) {
+      await this.completePlanChangeRequestFromSubscriptionEvent(
+        requestId,
+        payload,
+      );
+    }
+
+    return saved;
+  }
+
+  private async completePlanChangeRequestFromSubscriptionEvent(
+    requestId: string,
+    payload: Record<string, unknown>,
+  ) {
+    const request = await this.planChangeRequestsRepository.findOne({
+      where: { id: requestId },
+    });
+    if (!request) return;
+
+    if (request.status !== PlanChangeRequestStatus.PENDING_PAYMENT) return;
+
+    request.status = PlanChangeRequestStatus.COMPLETED;
+    request.reviewedAt = new Date();
+    request.reviewNotes =
+      'Auto-completed by Stripe customer.subscription webhook';
+    request.stripePaymentIntentId =
+      this.readString(payload.latest_invoice) ?? request.stripePaymentIntentId;
+
+    await this.planChangeRequestsRepository.save(request);
+  }
+
   private mapStripePlanToTenantPlan(raw: string | null): TenantPlan | null {
     if (!raw) return null;
+
     const normalized = raw.toLowerCase();
 
     if (normalized.includes('enterprise')) return TenantPlan.ENTERPRISE;
@@ -593,6 +1002,22 @@ export class SubscriptionsService {
   private toDateOrFallback(value: unknown, fallback: Date): Date {
     const parsed = this.toDateOrNull(value);
     return parsed ?? fallback;
+  }
+
+  private parseIsoDateOrThrow(value: string, fieldName: string): Date {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      throw new BadRequestException(`${fieldName} must be a valid ISO date`);
+    }
+    return parsed;
+  }
+
+  private assertValidPeriodRange(start: Date, end: Date) {
+    if (end.getTime() <= start.getTime()) {
+      throw new BadRequestException(
+        'currentPeriodEnd must be later than currentPeriodStart',
+      );
+    }
   }
 
   private toDateOrNull(value: unknown): Date | null {
@@ -627,6 +1052,158 @@ export class SubscriptionsService {
       if (typeof record.nickname === 'string') return record.nickname;
     }
 
+    return null;
+  }
+
+  private async getStripeClient() {
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
+    if (!stripeSecretKey) {
+      throw new BadRequestException('Missing STRIPE_SECRET_KEY');
+    }
+
+    const stripeModule = (await import('stripe')) as unknown as StripeModule;
+    return new stripeModule.default(stripeSecretKey);
+  }
+
+  async scheduleStripeDowngrade(
+    tenantId: string,
+    targetPlan: TenantPlan,
+    actor: AuthenticatedUser,
+  ) {
+    this.assertTenantAccess(tenantId, actor);
+
+    if (targetPlan === TenantPlan.FREE) {
+      throw new BadRequestException('Use cancelAutoRenew to downgrade to FREE');
+    }
+
+    const subscription = await this.findLatestTenantSubscription(tenantId);
+    if (!subscription?.stripeSubscriptionId) {
+      throw new BadRequestException(
+        'No Stripe subscription found. Use SPEI change-request for SPEI subscriptions.',
+      );
+    }
+
+    const currentRank = PLAN_ORDER[subscription.plan] ?? 0;
+    const targetRank = PLAN_ORDER[targetPlan] ?? 0;
+    if (targetRank >= currentRank) {
+      throw new BadRequestException(
+        'Use the plan change request flow for upgrades',
+      );
+    }
+
+    const targetPriceId = getRecurringPlanPriceId(targetPlan);
+    if (!targetPriceId) {
+      throw new BadRequestException(
+        `Missing STRIPE_PRICE_ID_${targetPlan} environment variable`,
+      );
+    }
+
+    const stripe = await this.getStripeClient();
+    const scheduleClient = stripe as unknown as StripeScheduleClient;
+
+    const stripeSub = await stripe.subscriptions.retrieve(
+      subscription.stripeSubscriptionId,
+    );
+
+    // If the subscription already has a schedule attached, reuse it.
+    const attachedScheduleId = this.readString(stripeSub.schedule);
+
+    let scheduleId = attachedScheduleId;
+    if (!scheduleId) {
+      const schedule = await scheduleClient.subscriptionSchedules.create({
+        from_subscription: subscription.stripeSubscriptionId,
+      });
+
+      scheduleId = this.readString(schedule.id);
+      if (!scheduleId) {
+        throw new BadRequestException(
+          'Failed to create Stripe subscription schedule',
+        );
+      }
+    }
+
+    const currentPeriodEnd =
+      this.readNumber(stripeSub.current_period_end) ??
+      Math.floor(subscription.currentPeriodEnd.getTime() / 1000);
+    const currentPriceId =
+      subscription.stripePriceId ??
+      this.readString(
+        (
+          stripeSub.items as
+            | { data: Array<Record<string, unknown>> }
+            | undefined
+        )?.data?.[0]?.price,
+      );
+
+    if (!currentPriceId) {
+      throw new BadRequestException(
+        'Could not determine current Stripe price ID',
+      );
+    }
+
+    if (!Number.isFinite(currentPeriodEnd) || currentPeriodEnd <= 0) {
+      throw new BadRequestException(
+        'Could not determine a valid Stripe current_period_end timestamp',
+      );
+    }
+
+    const schedule =
+      await scheduleClient.subscriptionSchedules.retrieve(scheduleId);
+    const currentPhase = schedule.current_phase as
+      | Record<string, unknown>
+      | undefined;
+    const currentPhaseStart = this.readNumber(currentPhase?.start_date);
+
+    if (!Number.isFinite(currentPhaseStart) || (currentPhaseStart ?? 0) <= 0) {
+      throw new BadRequestException(
+        'Could not determine a valid Stripe current phase start_date',
+      );
+    }
+
+    await scheduleClient.subscriptionSchedules.update(scheduleId, {
+      end_behavior: 'release',
+      phases: [
+        {
+          start_date: currentPhaseStart,
+          end_date: currentPeriodEnd,
+          items: [{ price: currentPriceId, quantity: 1 }],
+          proration_behavior: 'none',
+        },
+        {
+          items: [{ price: targetPriceId, quantity: 1 }],
+          proration_behavior: 'none',
+        },
+      ],
+    });
+
+    subscription.stripeScheduleId = scheduleId;
+    return this.subscriptionsRepository.save(subscription);
+  }
+
+  async cancelSpeiAtPeriodEnd(tenantId: string, actor: AuthenticatedUser) {
+    this.assertSuperAdmin(actor);
+
+    const subscription = await this.findLatestTenantSubscription(tenantId);
+    if (!subscription) {
+      throw new NotFoundException('No subscription found for this tenant');
+    }
+
+    if (subscription.stripeSubscriptionId) {
+      throw new BadRequestException(
+        'This subscription has a Stripe subscription. Use cancelAutoRenew instead.',
+      );
+    }
+
+    subscription.cancelAtPeriodEnd = true;
+    return this.subscriptionsRepository.save(subscription);
+  }
+
+  private readNumber(value: unknown): number | null {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      return Number.isNaN(parsed) ? null : parsed;
+    }
     return null;
   }
 }

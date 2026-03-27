@@ -34,7 +34,9 @@ import { SessionContentsService } from './session-contents.service';
 @ApiTags('Session Contents')
 @ApiBearerAuth('jwt-auth')
 export class SessionContentsNestedController {
-  constructor(private readonly sessionContentsService: SessionContentsService) {}
+  constructor(
+    private readonly sessionContentsService: SessionContentsService,
+  ) {}
 
   @Post()
   @Roles(Role.SUPER_ADMIN, Role.USER)
@@ -56,13 +58,15 @@ export class SessionContentsNestedController {
       dto,
       user,
     );
-    return { success: true, message: 'Session content created successfully', data };
+    return {
+      success: true,
+      message: 'Session content created successfully',
+      data,
+    };
   }
 
   @Get()
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar contenidos de una sesion' })
   @ApiUuidParam('sessionId', 'Identificador de la sesion')
   @ApiTypedSuccessResponse({
@@ -75,8 +79,15 @@ export class SessionContentsNestedController {
     @Param('sessionId', ParseUUIDPipe) sessionId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const data = await this.sessionContentsService.findBySession(sessionId, user);
-    return { success: true, message: 'Session contents retrieved successfully', data };
+    const data = await this.sessionContentsService.findBySession(
+      sessionId,
+      user,
+    );
+    return {
+      success: true,
+      message: 'Session contents retrieved successfully',
+      data,
+    };
   }
 
   @Patch(':sessionContentId')
@@ -101,7 +112,11 @@ export class SessionContentsNestedController {
       dto,
       user,
     );
-    return { success: true, message: 'Session content updated successfully', data };
+    return {
+      success: true,
+      message: 'Session content updated successfully',
+      data,
+    };
   }
 
   @Delete(':sessionContentId')
@@ -124,6 +139,10 @@ export class SessionContentsNestedController {
       sessionContentId,
       user,
     );
-    return { success: true, message: 'Session content deleted successfully', data };
+    return {
+      success: true,
+      message: 'Session content deleted successfully',
+      data,
+    };
   }
 }

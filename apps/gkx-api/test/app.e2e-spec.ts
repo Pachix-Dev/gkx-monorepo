@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ExecutionContext, INestApplication, ValidationPipe } from '@nestjs/common';
+import {
+  ExecutionContext,
+  INestApplication,
+  ValidationPipe,
+} from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
@@ -116,7 +120,11 @@ describe('TrainingSessionsController (e2e) - validation', () => {
           ? body.message
           : [body.message ?? ''];
 
-        expect(messages.some((msg) => msg.includes('trainingContentIds should not be empty'))).toBe(true);
+        expect(
+          messages.some((msg) =>
+            msg.includes('trainingContentIds should not be empty'),
+          ),
+        ).toBe(true);
         expect(sessionsServiceMock.update).not.toHaveBeenCalled();
       });
   });

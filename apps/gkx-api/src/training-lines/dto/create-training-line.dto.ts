@@ -11,7 +11,9 @@ export class CreateTrainingLineDto {
   @MaxLength(150)
   name!: string;
 
-  @ApiPropertyOptional({ example: 'Bloque inicial de activacion y preparacion' })
+  @ApiPropertyOptional({
+    example: 'Bloque inicial de activacion y preparacion',
+  })
   @IsOptional()
   @IsString()
   description?: string;

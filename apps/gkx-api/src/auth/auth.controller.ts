@@ -205,15 +205,13 @@ export class AuthController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: UpdateMyProfileDto,
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const data: Awaited<ReturnType<AuthService['updateMyProfile']>> =
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await this.authService.updateMyProfile(user, dto);
 
     return {
       success: true,
       message: 'Current user profile updated successfully',
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
       data,
     };
   }

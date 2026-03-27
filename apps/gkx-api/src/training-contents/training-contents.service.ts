@@ -50,10 +50,15 @@ export class TrainingContentsService {
     return this.contentsRepository.save(entity);
   }
 
-  async findAll(actor: AuthenticatedUser, filters: TrainingContentFilters = {}) {
+  async findAll(
+    actor: AuthenticatedUser,
+    filters: TrainingContentFilters = {},
+  ) {
     const where = {
       ...(actor.role === Role.SUPER_ADMIN ? {} : { tenantId: actor.tenantId }),
-      ...(filters.trainingLineId ? { trainingLineId: filters.trainingLineId } : {}),
+      ...(filters.trainingLineId
+        ? { trainingLineId: filters.trainingLineId }
+        : {}),
       ...(filters.search ? { name: ILike(`%${filters.search}%`) } : {}),
     };
 
@@ -142,14 +147,21 @@ export class TrainingContentsService {
   }
 
   private async ensureTenantExists(tenantId: string) {
-    const tenant = await this.tenantsRepository.findOne({ where: { id: tenantId } });
+    const tenant = await this.tenantsRepository.findOne({
+      where: { id: tenantId },
+    });
     if (!tenant) {
       throw new NotFoundException('Tenant not found');
     }
   }
 
-  private async ensureLineBelongsToTenant(trainingLineId: string, tenantId: string) {
-    const line = await this.linesRepository.findOne({ where: { id: trainingLineId } });
+  private async ensureLineBelongsToTenant(
+    trainingLineId: string,
+    tenantId: string,
+  ) {
+    const line = await this.linesRepository.findOne({
+      where: { id: trainingLineId },
+    });
     if (!line) {
       throw new NotFoundException('Training line not found');
     }
@@ -167,13 +179,17 @@ export class TrainingContentsService {
   ) {
     if (!createdBy) return;
 
-    const user = await this.usersRepository.findOne({ where: { id: createdBy } });
+    const user = await this.usersRepository.findOne({
+      where: { id: createdBy },
+    });
     if (!user) {
       throw new NotFoundException('Creator user not found');
     }
 
     if (user.tenantId !== tenantId) {
-      throw new BadRequestException('Creator does not belong to the provided tenant');
+      throw new BadRequestException(
+        'Creator does not belong to the provided tenant',
+      );
     }
   }
 }

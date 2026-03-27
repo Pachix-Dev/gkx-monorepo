@@ -46,9 +46,7 @@ export class ExercisesTacticalController {
   constructor(private readonly exercisesService: ExercisesService) {}
 
   @Get(':id/tactical')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Obtener diseño táctico del ejercicio' })
   @ApiUuidParam('id', 'Identificador del ejercicio')
   @ApiTypedSuccessResponse({
@@ -82,7 +80,11 @@ export class ExercisesTacticalController {
     @Body() dto: UpdateTacticalDesignDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const data = await this.exercisesService.updateTacticalDesign(id, dto, user);
+    const data = await this.exercisesService.updateTacticalDesign(
+      id,
+      dto,
+      user,
+    );
     return {
       success: true,
       message: 'Tactical design updated successfully',
@@ -95,7 +97,9 @@ export class ExercisesTacticalController {
   @UseInterceptors(
     FileInterceptor('file', {
       limits: {
-        fileSize: Number(process.env.TACTICAL_PREVIEW_MAX_FILE_SIZE ?? 3_000_000),
+        fileSize: Number(
+          process.env.TACTICAL_PREVIEW_MAX_FILE_SIZE ?? 3_000_000,
+        ),
       },
       fileFilter: (_req, file, callback) => {
         const allowed = ['image/webp', 'image/png', 'image/jpeg'];
@@ -132,7 +136,11 @@ export class ExercisesTacticalController {
       throw new BadRequestException('A preview file is required');
     }
 
-    const data = await this.exercisesService.updateTacticalPreview(id, file, user);
+    const data = await this.exercisesService.updateTacticalPreview(
+      id,
+      file,
+      user,
+    );
     return {
       success: true,
       message: 'Tactical preview uploaded successfully',

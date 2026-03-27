@@ -11,7 +11,9 @@ interface SaveTacticalPreviewParams {
 
 @Injectable()
 export class TacticalPreviewStorageService {
-  async saveTacticalPreview(params: SaveTacticalPreviewParams): Promise<string> {
+  async saveTacticalPreview(
+    params: SaveTacticalPreviewParams,
+  ): Promise<string> {
     const extension = this.resolveExtension(params.mimeType);
     // Keep a stable filename per exercise to avoid leaving stale preview files.
     const filename = `preview${extension}`;

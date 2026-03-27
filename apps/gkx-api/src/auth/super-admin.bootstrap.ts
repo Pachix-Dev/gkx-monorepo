@@ -3,7 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 import { Role } from './roles.enum';
-import { TenantEntity, TenantPlan, TenantStatus } from '../tenants/tenant.entity';
+import {
+  TenantEntity,
+  TenantPlan,
+  TenantStatus,
+} from '../tenants/tenant.entity';
 import { UserEntity, UserStatus } from '../users/user.entity';
 
 @Injectable()
@@ -35,11 +39,16 @@ export class SuperAdminBootstrap implements OnApplicationBootstrap {
       return;
     }
 
-    const tenantSlug = process.env.PLATFORM_TENANT_SLUG?.trim() || 'gkx-platform';
-    const tenantName = process.env.PLATFORM_TENANT_NAME?.trim() || 'GKX Platform';
-    const fullName = process.env.SUPER_ADMIN_FULL_NAME?.trim() || 'Platform Super Admin';
+    const tenantSlug =
+      process.env.PLATFORM_TENANT_SLUG?.trim() || 'gkx-platform';
+    const tenantName =
+      process.env.PLATFORM_TENANT_NAME?.trim() || 'GKX Platform';
+    const fullName =
+      process.env.SUPER_ADMIN_FULL_NAME?.trim() || 'Platform Super Admin';
 
-    let tenant = await this.tenantsRepository.findOne({ where: { slug: tenantSlug } });
+    let tenant = await this.tenantsRepository.findOne({
+      where: { slug: tenantSlug },
+    });
 
     if (!tenant) {
       tenant = this.tenantsRepository.create({
@@ -52,7 +61,9 @@ export class SuperAdminBootstrap implements OnApplicationBootstrap {
       this.logger.log(`Platform tenant created: ${tenant.slug}`);
     }
 
-    const existingSuperAdmin = await this.usersRepository.findOne({ where: { email } });
+    const existingSuperAdmin = await this.usersRepository.findOne({
+      where: { email },
+    });
     if (existingSuperAdmin) {
       this.logger.log('SUPER_ADMIN already exists, bootstrap skipped');
       return;

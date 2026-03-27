@@ -15,7 +15,10 @@ import {
   ApiTypedSuccessResponse,
   ApiUuidParam,
 } from '../common/swagger/openapi.decorators';
-import { DeleteDataModel, PublicTenantModel } from '../common/swagger/response-models';
+import {
+  DeleteDataModel,
+  PublicTenantModel,
+} from '../common/swagger/response-models';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -65,7 +68,10 @@ export class TenantsController {
   @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Obtener tenant por id' })
   @ApiUuidParam('id', 'Identificador del tenant')
-  @ApiTypedSuccessResponse({ message: 'Tenant retrieved successfully', model: PublicTenantModel })
+  @ApiTypedSuccessResponse({
+    message: 'Tenant retrieved successfully',
+    model: PublicTenantModel,
+  })
   @ApiCommonErrorResponses()
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
@@ -79,7 +85,10 @@ export class TenantsController {
   @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar tenant' })
   @ApiUuidParam('id', 'Identificador del tenant')
-  @ApiTypedSuccessResponse({ message: 'Tenant updated successfully', model: PublicTenantModel })
+  @ApiTypedSuccessResponse({
+    message: 'Tenant updated successfully',
+    model: PublicTenantModel,
+  })
   @ApiCommonErrorResponses()
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -94,7 +103,10 @@ export class TenantsController {
   @Roles(Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Eliminar tenant' })
   @ApiUuidParam('id', 'Identificador del tenant')
-  @ApiTypedSuccessResponse({ message: 'Tenant deleted successfully', model: DeleteDataModel })
+  @ApiTypedSuccessResponse({
+    message: 'Tenant deleted successfully',
+    model: DeleteDataModel,
+  })
   @ApiCommonErrorResponses()
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const data = await this.tenantsService.remove(id);

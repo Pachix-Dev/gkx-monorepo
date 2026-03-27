@@ -56,13 +56,15 @@ export class TrainingContentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.contentsService.create(dto, user);
-    return { success: true, message: 'Training content created successfully', data };
+    return {
+      success: true,
+      message: 'Training content created successfully',
+      data,
+    };
   }
 
   @Get()
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar contenidos de entrenamiento' })
   @ApiQuery({ name: 'trainingLineId', required: false, format: 'uuid' })
   @ApiQuery({ name: 'search', required: false })
@@ -81,13 +83,15 @@ export class TrainingContentsController {
       trainingLineId,
       search,
     });
-    return { success: true, message: 'Training contents retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Training contents retrieved successfully',
+      data,
+    };
   }
 
   @Get(':id')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Obtener contenido por id' })
   @ApiUuidParam('id', 'Identificador del contenido')
   @ApiTypedSuccessResponse({
@@ -100,7 +104,11 @@ export class TrainingContentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.contentsService.findOne(id, user);
-    return { success: true, message: 'Training content retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Training content retrieved successfully',
+      data,
+    };
   }
 
   @Patch(':id')
@@ -118,7 +126,11 @@ export class TrainingContentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.contentsService.update(id, dto, user);
-    return { success: true, message: 'Training content updated successfully', data };
+    return {
+      success: true,
+      message: 'Training content updated successfully',
+      data,
+    };
   }
 
   @Delete(':id')
@@ -135,6 +147,10 @@ export class TrainingContentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.contentsService.remove(id, user);
-    return { success: true, message: 'Training content deleted successfully', data };
+    return {
+      success: true,
+      message: 'Training content deleted successfully',
+      data,
+    };
   }
 }

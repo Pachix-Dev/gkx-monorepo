@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsObject, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsObject,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class UpdateTacticalDesignDto {
   @ApiProperty({
@@ -17,7 +24,9 @@ export class UpdateTacticalDesignDto {
   @Min(1)
   stateVersion?: number;
 
-  @ApiPropertyOptional({ example: 'https://storage.example.com/preview-abc123.webp' })
+  @ApiPropertyOptional({
+    example: 'https://storage.example.com/preview-abc123.webp',
+  })
   @IsOptional()
   @IsString()
   previewUrl?: string;

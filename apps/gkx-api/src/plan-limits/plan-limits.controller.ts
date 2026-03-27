@@ -24,7 +24,7 @@ export class PlanLimitsController {
   @ApiOperation({
     summary: 'Get current plan usage for the authenticated tenant',
   })
-   @ApiSuccessResponse({ message: 'Plan usage retrieved' })
+  @ApiSuccessResponse({ message: 'Plan usage retrieved' })
   @ApiCommonErrorResponses()
   async getUsage(@CurrentUser() actor: AuthenticatedUser) {
     const data = await this.planLimitsService.getUsage(actor);

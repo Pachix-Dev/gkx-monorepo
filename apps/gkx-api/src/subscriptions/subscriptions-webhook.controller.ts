@@ -13,7 +13,9 @@ export class SubscriptionsWebhookController {
   constructor(private readonly subscriptionsService: SubscriptionsService) {}
 
   @Post('stripe')
-  @ApiOperation({ summary: 'Stripe base webhook for subscription synchronization' })
+  @ApiOperation({
+    summary: 'Stripe base webhook for subscription synchronization',
+  })
   @ApiSuccessResponse({ message: 'Webhook processed' })
   @ApiCommonErrorResponses()
   async stripeWebhook(

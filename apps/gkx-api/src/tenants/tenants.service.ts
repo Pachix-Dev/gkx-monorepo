@@ -101,9 +101,7 @@ export class TenantsService {
     }
 
     if (actor.role === Role.USER && actor.tenantId !== tenantId) {
-      throw new ForbiddenException(
-        'USER can only access its own tenant',
-      );
+      throw new ForbiddenException('USER can only access its own tenant');
     }
   }
 }

@@ -34,7 +34,9 @@ import { SessionExercisesService } from './session-exercises.service';
 @ApiTags('Session Exercises')
 @ApiBearerAuth('jwt-auth')
 export class SessionExercisesController {
-  constructor(private readonly sessionExercisesService: SessionExercisesService) {}
+  constructor(
+    private readonly sessionExercisesService: SessionExercisesService,
+  ) {}
 
   @Post()
   @Roles(Role.SUPER_ADMIN, Role.USER)
@@ -50,13 +52,15 @@ export class SessionExercisesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.sessionExercisesService.create(dto, user);
-    return { success: true, message: 'Session exercise created successfully', data };
+    return {
+      success: true,
+      message: 'Session exercise created successfully',
+      data,
+    };
   }
 
   @Get()
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar session-exercises' })
   @ApiTypedSuccessResponse({
     message: 'Session exercises retrieved successfully',
@@ -66,13 +70,15 @@ export class SessionExercisesController {
   @ApiCommonErrorResponses()
   async findAll(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.sessionExercisesService.findAll(user);
-    return { success: true, message: 'Session exercises retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Session exercises retrieved successfully',
+      data,
+    };
   }
 
   @Get(':id')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Obtener session-exercise por id' })
   @ApiUuidParam('id', 'Identificador de session-exercise')
   @ApiTypedSuccessResponse({
@@ -85,7 +91,11 @@ export class SessionExercisesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.sessionExercisesService.findOne(id, user);
-    return { success: true, message: 'Session exercise retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Session exercise retrieved successfully',
+      data,
+    };
   }
 
   @Patch(':id')
@@ -103,7 +113,11 @@ export class SessionExercisesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.sessionExercisesService.update(id, dto, user);
-    return { success: true, message: 'Session exercise updated successfully', data };
+    return {
+      success: true,
+      message: 'Session exercise updated successfully',
+      data,
+    };
   }
 
   @Delete(':id')
@@ -120,6 +134,10 @@ export class SessionExercisesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.sessionExercisesService.remove(id, user);
-    return { success: true, message: 'Session exercise deleted successfully', data };
+    return {
+      success: true,
+      message: 'Session exercise deleted successfully',
+      data,
+    };
   }
 }

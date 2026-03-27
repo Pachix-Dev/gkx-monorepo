@@ -50,13 +50,15 @@ export class TrainingLinesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.trainingLinesService.create(dto, user);
-    return { success: true, message: 'Training line created successfully', data };
+    return {
+      success: true,
+      message: 'Training line created successfully',
+      data,
+    };
   }
 
   @Get()
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar lineas de entrenamiento' })
   @ApiTypedSuccessResponse({
     message: 'Training lines retrieved successfully',
@@ -66,13 +68,15 @@ export class TrainingLinesController {
   @ApiCommonErrorResponses()
   async findAll(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.trainingLinesService.findAll(user);
-    return { success: true, message: 'Training lines retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Training lines retrieved successfully',
+      data,
+    };
   }
 
   @Get(':id')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Obtener linea de entrenamiento por id' })
   @ApiUuidParam('id', 'Identificador de la linea de entrenamiento')
   @ApiTypedSuccessResponse({
@@ -85,7 +89,11 @@ export class TrainingLinesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.trainingLinesService.findOne(id, user);
-    return { success: true, message: 'Training line retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Training line retrieved successfully',
+      data,
+    };
   }
 
   @Patch(':id')
@@ -103,7 +111,11 @@ export class TrainingLinesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.trainingLinesService.update(id, dto, user);
-    return { success: true, message: 'Training line updated successfully', data };
+    return {
+      success: true,
+      message: 'Training line updated successfully',
+      data,
+    };
   }
 
   @Delete(':id')
@@ -120,6 +132,10 @@ export class TrainingLinesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.trainingLinesService.remove(id, user);
-    return { success: true, message: 'Training line deleted successfully', data };
+    return {
+      success: true,
+      message: 'Training line deleted successfully',
+      data,
+    };
   }
 }

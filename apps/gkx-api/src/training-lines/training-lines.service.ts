@@ -47,7 +47,9 @@ export class TrainingLinesService {
   }
 
   async findOne(id: string, actor: AuthenticatedUser) {
-    const entity = await this.trainingLinesRepository.findOne({ where: { id } });
+    const entity = await this.trainingLinesRepository.findOne({
+      where: { id },
+    });
     if (!entity) {
       throw new NotFoundException('Training line not found');
     }
@@ -111,7 +113,9 @@ export class TrainingLinesService {
   }
 
   private async ensureTenantExists(tenantId: string) {
-    const tenant = await this.tenantsRepository.findOne({ where: { id: tenantId } });
+    const tenant = await this.tenantsRepository.findOne({
+      where: { id: tenantId },
+    });
     if (!tenant) {
       throw new NotFoundException('Tenant not found');
     }

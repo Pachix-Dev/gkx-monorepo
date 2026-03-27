@@ -81,9 +81,7 @@ export class AttendanceController {
   }
 
   @Get()
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar asistencias' })
   @ApiTypedSuccessResponse({
     message: 'Attendance records retrieved successfully',
@@ -101,9 +99,7 @@ export class AttendanceController {
   }
 
   @Get('session/:trainingSessionId')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar asistencias por sesion' })
   @ApiUuidParam('trainingSessionId', 'Identificador de la sesion')
   @ApiTypedSuccessResponse({
@@ -128,9 +124,7 @@ export class AttendanceController {
   }
 
   @Get(':id')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Obtener asistencia por id' })
   @ApiUuidParam('id', 'Identificador del registro de asistencia')
   @ApiTypedSuccessResponse({

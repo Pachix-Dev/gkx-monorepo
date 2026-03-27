@@ -52,13 +52,15 @@ export class TrainingSessionsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.sessionsService.create(dto, user);
-    return { success: true, message: 'Training session created successfully', data };
+    return {
+      success: true,
+      message: 'Training session created successfully',
+      data,
+    };
   }
 
   @Get()
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar sesiones de entrenamiento' })
   @ApiTypedSuccessResponse({
     message: 'Training sessions retrieved successfully',
@@ -68,13 +70,15 @@ export class TrainingSessionsController {
   @ApiCommonErrorResponses()
   async findAll(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.sessionsService.findAll(user);
-    return { success: true, message: 'Training sessions retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Training sessions retrieved successfully',
+      data,
+    };
   }
 
   @Get(':id')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Obtener sesion por id' })
   @ApiUuidParam('id', 'Identificador de la sesion')
   @ApiTypedSuccessResponse({
@@ -87,7 +91,11 @@ export class TrainingSessionsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.sessionsService.findOne(id, user);
-    return { success: true, message: 'Training session retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Training session retrieved successfully',
+      data,
+    };
   }
 
   @Get(':id/field-sheet.pdf')
@@ -123,7 +131,11 @@ export class TrainingSessionsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.sessionsService.update(id, dto, user);
-    return { success: true, message: 'Training session updated successfully', data };
+    return {
+      success: true,
+      message: 'Training session updated successfully',
+      data,
+    };
   }
 
   @Delete(':id')
@@ -140,6 +152,10 @@ export class TrainingSessionsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.sessionsService.remove(id, user);
-    return { success: true, message: 'Training session deleted successfully', data };
+    return {
+      success: true,
+      message: 'Training session deleted successfully',
+      data,
+    };
   }
 }

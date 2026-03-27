@@ -28,9 +28,7 @@ export class ExercisesNestedController {
   constructor(private readonly exercisesService: ExercisesService) {}
 
   @Get()
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar ejercicios por contenido de entrenamiento' })
   @ApiUuidParam('id', 'Identificador del contenido de entrenamiento')
   @ApiTypedSuccessResponse({
@@ -43,7 +41,9 @@ export class ExercisesNestedController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const data = await this.exercisesService.findAll(user, { trainingContentId: id });
+    const data = await this.exercisesService.findAll(user, {
+      trainingContentId: id,
+    });
     return { success: true, message: 'Exercises retrieved successfully', data };
   }
 }

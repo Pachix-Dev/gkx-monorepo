@@ -21,7 +21,10 @@ import {
   ApiTypedSuccessResponse,
   ApiUuidParam,
 } from '../common/swagger/openapi.decorators';
-import { DeleteDataModel, ExerciseModel } from '../common/swagger/response-models';
+import {
+  DeleteDataModel,
+  ExerciseModel,
+} from '../common/swagger/response-models';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -57,9 +60,7 @@ export class ExercisesController {
   }
 
   @Get()
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar ejercicios' })
   @ApiQuery({ name: 'trainingContentId', required: false, format: 'uuid' })
   @ApiQuery({ name: 'difficulty', required: false })
@@ -85,12 +86,13 @@ export class ExercisesController {
   }
 
   @Get(':id')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Obtener ejercicio por id' })
   @ApiUuidParam('id', 'Identificador del ejercicio')
-  @ApiTypedSuccessResponse({ message: 'Exercise retrieved successfully', model: ExerciseModel })
+  @ApiTypedSuccessResponse({
+    message: 'Exercise retrieved successfully',
+    model: ExerciseModel,
+  })
   @ApiCommonErrorResponses()
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
@@ -104,7 +106,10 @@ export class ExercisesController {
   @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar ejercicio' })
   @ApiUuidParam('id', 'Identificador del ejercicio')
-  @ApiTypedSuccessResponse({ message: 'Exercise updated successfully', model: ExerciseModel })
+  @ApiTypedSuccessResponse({
+    message: 'Exercise updated successfully',
+    model: ExerciseModel,
+  })
   @ApiCommonErrorResponses()
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -119,7 +124,10 @@ export class ExercisesController {
   @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Eliminar ejercicio' })
   @ApiUuidParam('id', 'Identificador del ejercicio')
-  @ApiTypedSuccessResponse({ message: 'Exercise deleted successfully', model: DeleteDataModel })
+  @ApiTypedSuccessResponse({
+    message: 'Exercise deleted successfully',
+    model: DeleteDataModel,
+  })
   @ApiCommonErrorResponses()
   async remove(
     @Param('id', ParseUUIDPipe) id: string,

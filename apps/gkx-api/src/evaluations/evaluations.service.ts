@@ -63,7 +63,9 @@ export class EvaluationsService {
   }
 
   async findBySession(sessionId: string, actor: AuthenticatedUser) {
-    const session = await this.sessionsRepository.findOne({ where: { id: sessionId } });
+    const session = await this.sessionsRepository.findOne({
+      where: { id: sessionId },
+    });
     if (!session) {
       throw new NotFoundException('Training session not found');
     }
@@ -94,11 +96,17 @@ export class EvaluationsService {
     }
 
     if (dto.goalkeeperId) {
-      await this.ensureGoalkeeperBelongsToTenant(dto.goalkeeperId, entity.tenantId);
+      await this.ensureGoalkeeperBelongsToTenant(
+        dto.goalkeeperId,
+        entity.tenantId,
+      );
     }
 
     if (dto.trainingSessionId) {
-      await this.ensureSessionBelongsToTenant(dto.trainingSessionId, entity.tenantId);
+      await this.ensureSessionBelongsToTenant(
+        dto.trainingSessionId,
+        entity.tenantId,
+      );
     }
 
     const nextItems = dto.items ? this.normalizeItems(dto.items) : entity.items;
@@ -144,7 +152,9 @@ export class EvaluationsService {
   }
 
   private async ensureTenantExists(tenantId: string) {
-    const tenant = await this.tenantsRepository.findOne({ where: { id: tenantId } });
+    const tenant = await this.tenantsRepository.findOne({
+      where: { id: tenantId },
+    });
     if (!tenant) throw new NotFoundException('Tenant not found');
   }
 
@@ -155,7 +165,8 @@ export class EvaluationsService {
     const goalkeeper = await this.goalkeepersRepository.findOne({
       where: { id: goalkeeperId },
     });
-    if (!goalkeeper) throw new NotFoundException('Goalkeeper profile not found');
+    if (!goalkeeper)
+      throw new NotFoundException('Goalkeeper profile not found');
     if (goalkeeper.tenantId !== tenantId) {
       throw new BadRequestException(
         'Goalkeeper does not belong to the provided tenant',
@@ -163,8 +174,13 @@ export class EvaluationsService {
     }
   }
 
-  private async ensureSessionBelongsToTenant(sessionId: string, tenantId: string) {
-    const session = await this.sessionsRepository.findOne({ where: { id: sessionId } });
+  private async ensureSessionBelongsToTenant(
+    sessionId: string,
+    tenantId: string,
+  ) {
+    const session = await this.sessionsRepository.findOne({
+      where: { id: sessionId },
+    });
     if (!session) throw new NotFoundException('Training session not found');
     if (session.tenantId !== tenantId) {
       throw new BadRequestException(

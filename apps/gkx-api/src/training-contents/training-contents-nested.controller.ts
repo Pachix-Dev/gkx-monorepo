@@ -28,9 +28,7 @@ export class TrainingContentsNestedController {
   constructor(private readonly contentsService: TrainingContentsService) {}
 
   @Get()
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar contenidos por linea de entrenamiento' })
   @ApiUuidParam('id', 'Identificador de la linea de entrenamiento')
   @ApiTypedSuccessResponse({
@@ -43,7 +41,13 @@ export class TrainingContentsNestedController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const data = await this.contentsService.findAll(user, { trainingLineId: id });
-    return { success: true, message: 'Training contents retrieved successfully', data };
+    const data = await this.contentsService.findAll(user, {
+      trainingLineId: id,
+    });
+    return {
+      success: true,
+      message: 'Training contents retrieved successfully',
+      data,
+    };
   }
 }

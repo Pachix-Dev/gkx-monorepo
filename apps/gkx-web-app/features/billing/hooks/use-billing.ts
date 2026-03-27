@@ -4,6 +4,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/use-auth";
 import { getPlanUsage } from "@/lib/api/plan-limits";
 import {
+  cancelAutoRenew,
+  cancelSpeiAtPeriodEnd,
+  createCustomerPortalSession,
   createPlanChangeRequest,
   getActiveSubscription,
   getMyPlanChangeRequests,
@@ -12,8 +15,10 @@ import {
   getSubscriptions,
   getTenantSubscriptions,
   PlanChangeRequestStatus,
-  SubscriptionPlan,
+  reactivateAutoRenew,
   reviewPlanChangeRequest,
+  scheduleStripeDowngrade,
+  SubscriptionPlan,
   updateSubscription,
   UpdateSubscriptionInput,
 } from "@/lib/api/subscriptions";
@@ -80,9 +85,7 @@ export function useUpdateSubscriptionMutation() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.subscriptions }),
-        queryClient.invalidateQueries({
-          queryKey: ["subscriptions", "tenant"],
-        }),
+        queryClient.invalidateQueries({ queryKey: ["subscriptions", "tenant"] }),
         queryClient.invalidateQueries({ queryKey: queryKeys.planUsage }),
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboardAlerts }),
       ]);
@@ -162,6 +165,89 @@ export function useReviewPlanChangeRequestMutation() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.planChangeRequests() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.subscriptions }),
+      ]);
+    },
+  });
+}
+
+export function useCustomerPortalSessionMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (tenantId: string) => createCustomerPortalSession(tenantId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.subscriptions }),
+        queryClient.invalidateQueries({ queryKey: ["subscriptions", "tenant"] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardAlerts }),
+      ]);
+    },
+  });
+}
+
+export function useCancelAutoRenewMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (tenantId: string) => cancelAutoRenew(tenantId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.subscriptions }),
+        queryClient.invalidateQueries({ queryKey: ["subscriptions", "tenant"] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.planUsage }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardAlerts }),
+      ]);
+    },
+  });
+}
+
+export function useReactivateAutoRenewMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (tenantId: string) => reactivateAutoRenew(tenantId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.subscriptions }),
+        queryClient.invalidateQueries({ queryKey: ["subscriptions", "tenant"] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.planUsage }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardAlerts }),
+      ]);
+    },
+  });
+}
+
+export function useScheduleStripeDowngradeMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      tenantId,
+      plan,
+    }: {
+      tenantId: string;
+      plan: SubscriptionPlan;
+    }) => scheduleStripeDowngrade(tenantId, plan),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.subscriptions }),
+        queryClient.invalidateQueries({ queryKey: ["subscriptions", "tenant"] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardAlerts }),
+      ]);
+    },
+  });
+}
+
+export function useCancelSpeiAtPeriodEndMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (tenantId: string) => cancelSpeiAtPeriodEnd(tenantId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.subscriptions }),
+        queryClient.invalidateQueries({ queryKey: ["subscriptions", "tenant"] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardAlerts }),
       ]);
     },
   });

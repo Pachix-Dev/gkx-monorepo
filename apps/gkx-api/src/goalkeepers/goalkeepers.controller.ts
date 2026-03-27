@@ -13,7 +13,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import {
   ApiCommonErrorResponses,
   ApiTypedSuccessResponse,
@@ -50,9 +56,7 @@ export class GoalkeepersController {
   constructor(private readonly goalkeepersService: GoalkeepersService) {}
 
   @Post()
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Crear perfil de portero' })
   @ApiTypedSuccessResponse({
     message: 'Goalkeeper profile created successfully',
@@ -65,13 +69,15 @@ export class GoalkeepersController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.goalkeepersService.create(dto, user);
-    return { success: true, message: 'Goalkeeper profile created successfully', data };
+    return {
+      success: true,
+      message: 'Goalkeeper profile created successfully',
+      data,
+    };
   }
 
   @Get()
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar perfiles de portero' })
   @ApiTypedSuccessResponse({
     message: 'Goalkeeper profiles retrieved successfully',
@@ -81,13 +87,15 @@ export class GoalkeepersController {
   @ApiCommonErrorResponses()
   async findAll(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.goalkeepersService.findAll(user);
-    return { success: true, message: 'Goalkeeper profiles retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Goalkeeper profiles retrieved successfully',
+      data,
+    };
   }
 
   @Get(':id')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Obtener perfil de portero por id' })
   @ApiUuidParam('id', 'Identificador del portero')
   @ApiTypedSuccessResponse({
@@ -100,13 +108,15 @@ export class GoalkeepersController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.goalkeepersService.findOne(id, user);
-    return { success: true, message: 'Goalkeeper profile retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Goalkeeper profile retrieved successfully',
+      data,
+    };
   }
 
   @Get(':id/progress')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Obtener progreso agregado del portero' })
   @ApiUuidParam('id', 'Identificador del portero')
   @ApiTypedSuccessResponse({
@@ -119,13 +129,15 @@ export class GoalkeepersController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.goalkeepersService.getProgress(id, user);
-    return { success: true, message: 'Goalkeeper progress retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Goalkeeper progress retrieved successfully',
+      data,
+    };
   }
 
   @Get(':id/evaluations')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar evaluaciones del portero' })
   @ApiUuidParam('id', 'Identificador del portero')
   @ApiTypedSuccessResponse({
@@ -139,13 +151,15 @@ export class GoalkeepersController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.goalkeepersService.getEvaluations(id, user);
-    return { success: true, message: 'Goalkeeper evaluations retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Goalkeeper evaluations retrieved successfully',
+      data,
+    };
   }
 
   @Get(':id/metrics')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Obtener metricas del portero' })
   @ApiUuidParam('id', 'Identificador del portero')
   @ApiTypedSuccessResponse({
@@ -158,13 +172,15 @@ export class GoalkeepersController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.goalkeepersService.getMetrics(id, user);
-    return { success: true, message: 'Goalkeeper metrics retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Goalkeeper metrics retrieved successfully',
+      data,
+    };
   }
 
   @Patch(':id')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar perfil de portero' })
   @ApiUuidParam('id', 'Identificador del portero')
   @ApiTypedSuccessResponse({
@@ -178,7 +194,11 @@ export class GoalkeepersController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.goalkeepersService.update(id, dto, user);
-    return { success: true, message: 'Goalkeeper profile updated successfully', data };
+    return {
+      success: true,
+      message: 'Goalkeeper profile updated successfully',
+      data,
+    };
   }
 
   @Delete(':id')
@@ -195,7 +215,11 @@ export class GoalkeepersController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.goalkeepersService.remove(id, user);
-    return { success: true, message: 'Goalkeeper profile deleted successfully', data };
+    return {
+      success: true,
+      message: 'Goalkeeper profile deleted successfully',
+      data,
+    };
   }
 
   @Post(':id/avatar')
@@ -203,7 +227,9 @@ export class GoalkeepersController {
   @UseInterceptors(
     FileInterceptor('file', {
       limits: {
-        fileSize: Number(process.env.GOALKEEPER_AVATAR_MAX_FILE_SIZE ?? 5_000_000),
+        fileSize: Number(
+          process.env.GOALKEEPER_AVATAR_MAX_FILE_SIZE ?? 5_000_000,
+        ),
       },
       fileFilter: (_req, file, callback) => {
         const allowed = ['image/webp', 'image/png', 'image/jpeg'];

@@ -34,7 +34,9 @@ import { SessionExercisesService } from './session-exercises.service';
 @ApiTags('Session Exercises')
 @ApiBearerAuth('jwt-auth')
 export class SessionExercisesNestedController {
-  constructor(private readonly sessionExercisesService: SessionExercisesService) {}
+  constructor(
+    private readonly sessionExercisesService: SessionExercisesService,
+  ) {}
 
   @Post()
   @Roles(Role.SUPER_ADMIN, Role.USER)
@@ -56,13 +58,15 @@ export class SessionExercisesNestedController {
       dto,
       user,
     );
-    return { success: true, message: 'Session exercise created successfully', data };
+    return {
+      success: true,
+      message: 'Session exercise created successfully',
+      data,
+    };
   }
 
   @Get()
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar ejercicios de una sesion' })
   @ApiUuidParam('sessionId', 'Identificador de la sesion')
   @ApiTypedSuccessResponse({
@@ -75,8 +79,15 @@ export class SessionExercisesNestedController {
     @Param('sessionId', ParseUUIDPipe) sessionId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const data = await this.sessionExercisesService.findBySession(sessionId, user);
-    return { success: true, message: 'Session exercises retrieved successfully', data };
+    const data = await this.sessionExercisesService.findBySession(
+      sessionId,
+      user,
+    );
+    return {
+      success: true,
+      message: 'Session exercises retrieved successfully',
+      data,
+    };
   }
 
   @Patch(':sessionExerciseId')
@@ -101,7 +112,11 @@ export class SessionExercisesNestedController {
       dto,
       user,
     );
-    return { success: true, message: 'Session exercise updated successfully', data };
+    return {
+      success: true,
+      message: 'Session exercise updated successfully',
+      data,
+    };
   }
 
   @Delete(':sessionExerciseId')
@@ -124,6 +139,10 @@ export class SessionExercisesNestedController {
       sessionExerciseId,
       user,
     );
-    return { success: true, message: 'Session exercise deleted successfully', data };
+    return {
+      success: true,
+      message: 'Session exercise deleted successfully',
+      data,
+    };
   }
 }

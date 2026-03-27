@@ -1,8 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsUUID } from 'class-validator';
-import {
-  PlanPaymentMethod,
-} from '../plan-change-request.entity';
+import { PlanPaymentMethod } from '../plan-change-request.entity';
 import { TenantPlan } from '../../tenants/tenant.entity';
 
 export class CreatePlanChangeRequestDto {

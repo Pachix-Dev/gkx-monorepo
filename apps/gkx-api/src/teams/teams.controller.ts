@@ -40,7 +40,11 @@ export class TeamsController {
   @Post()
   @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Crear equipo' })
-  @ApiTypedSuccessResponse({ message: 'Team created successfully', status: 201, model: TeamModel })
+  @ApiTypedSuccessResponse({
+    message: 'Team created successfully',
+    status: 201,
+    model: TeamModel,
+  })
   @ApiCommonErrorResponses()
   async create(
     @Body() dto: CreateTeamDto,
@@ -51,11 +55,13 @@ export class TeamsController {
   }
 
   @Get()
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar equipos' })
-  @ApiTypedSuccessResponse({ message: 'Teams retrieved successfully', isArray: true, model: TeamModel })
+  @ApiTypedSuccessResponse({
+    message: 'Teams retrieved successfully',
+    isArray: true,
+    model: TeamModel,
+  })
   @ApiCommonErrorResponses()
   async findAll(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.teamsService.findAll(user);
@@ -63,12 +69,13 @@ export class TeamsController {
   }
 
   @Get(':id')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Obtener equipo por id' })
   @ApiUuidParam('id', 'Identificador del equipo')
-  @ApiTypedSuccessResponse({ message: 'Team retrieved successfully', model: TeamModel })
+  @ApiTypedSuccessResponse({
+    message: 'Team retrieved successfully',
+    model: TeamModel,
+  })
   @ApiCommonErrorResponses()
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
@@ -82,7 +89,10 @@ export class TeamsController {
   @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Actualizar equipo' })
   @ApiUuidParam('id', 'Identificador del equipo')
-  @ApiTypedSuccessResponse({ message: 'Team updated successfully', model: TeamModel })
+  @ApiTypedSuccessResponse({
+    message: 'Team updated successfully',
+    model: TeamModel,
+  })
   @ApiCommonErrorResponses()
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -97,7 +107,10 @@ export class TeamsController {
   @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Eliminar equipo' })
   @ApiUuidParam('id', 'Identificador del equipo')
-  @ApiTypedSuccessResponse({ message: 'Team deleted successfully', model: DeleteDataModel })
+  @ApiTypedSuccessResponse({
+    message: 'Team deleted successfully',
+    model: DeleteDataModel,
+  })
   @ApiCommonErrorResponses()
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
@@ -123,7 +136,11 @@ export class TeamsController {
     @Param('goalkeeperId', ParseUUIDPipe) goalkeeperId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const data = await this.teamsService.assignGoalkeeper(id, goalkeeperId, user);
+    const data = await this.teamsService.assignGoalkeeper(
+      id,
+      goalkeeperId,
+      user,
+    );
     return {
       success: true,
       message: 'Goalkeeper assigned to team successfully',

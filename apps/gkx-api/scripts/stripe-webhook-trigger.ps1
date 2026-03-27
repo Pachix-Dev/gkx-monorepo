@@ -42,6 +42,7 @@ if (-not $stripePath) {
 
 Write-Host "Disparando eventos de suscripcion de prueba..." -ForegroundColor Cyan
 
+& $stripePath trigger checkout.session.completed
 & $stripePath trigger customer.subscription.created
 & $stripePath trigger customer.subscription.updated
 & $stripePath trigger customer.subscription.deleted

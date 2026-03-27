@@ -34,7 +34,9 @@ import { SessionContentsService } from './session-contents.service';
 @ApiTags('Session Contents')
 @ApiBearerAuth('jwt-auth')
 export class SessionContentsController {
-  constructor(private readonly sessionContentsService: SessionContentsService) {}
+  constructor(
+    private readonly sessionContentsService: SessionContentsService,
+  ) {}
 
   @Post()
   @Roles(Role.SUPER_ADMIN, Role.USER)
@@ -50,13 +52,15 @@ export class SessionContentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.sessionContentsService.create(dto, user);
-    return { success: true, message: 'Session content created successfully', data };
+    return {
+      success: true,
+      message: 'Session content created successfully',
+      data,
+    };
   }
 
   @Get()
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Listar session-contents' })
   @ApiTypedSuccessResponse({
     message: 'Session contents retrieved successfully',
@@ -66,13 +70,15 @@ export class SessionContentsController {
   @ApiCommonErrorResponses()
   async findAll(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.sessionContentsService.findAll(user);
-    return { success: true, message: 'Session contents retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Session contents retrieved successfully',
+      data,
+    };
   }
 
   @Get(':id')
-  @Roles(
-    Role.SUPER_ADMIN, Role.USER,
-  )
+  @Roles(Role.SUPER_ADMIN, Role.USER)
   @ApiOperation({ summary: 'Obtener session-content por id' })
   @ApiUuidParam('id', 'Identificador de session-content')
   @ApiTypedSuccessResponse({
@@ -85,7 +91,11 @@ export class SessionContentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.sessionContentsService.findOne(id, user);
-    return { success: true, message: 'Session content retrieved successfully', data };
+    return {
+      success: true,
+      message: 'Session content retrieved successfully',
+      data,
+    };
   }
 
   @Patch(':id')
@@ -103,7 +113,11 @@ export class SessionContentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.sessionContentsService.update(id, dto, user);
-    return { success: true, message: 'Session content updated successfully', data };
+    return {
+      success: true,
+      message: 'Session content updated successfully',
+      data,
+    };
   }
 
   @Delete(':id')
@@ -120,6 +134,10 @@ export class SessionContentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const data = await this.sessionContentsService.remove(id, user);
-    return { success: true, message: 'Session content deleted successfully', data };
+    return {
+      success: true,
+      message: 'Session content deleted successfully',
+      data,
+    };
   }
 }

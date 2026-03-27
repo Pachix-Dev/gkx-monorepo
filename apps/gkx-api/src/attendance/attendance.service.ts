@@ -109,7 +109,9 @@ export class AttendanceService {
     sessionId: string,
     actor: AuthenticatedUser,
   ): Promise<AttendanceEntity[]> {
-    const session = await this.sessionsRepository.findOne({ where: { id: sessionId } });
+    const session = await this.sessionsRepository.findOne({
+      where: { id: sessionId },
+    });
     if (!session) {
       throw new NotFoundException('Training session not found');
     }
@@ -125,7 +127,10 @@ export class AttendanceService {
     });
   }
 
-  async findOne(id: string, actor: AuthenticatedUser): Promise<AttendanceEntity> {
+  async findOne(
+    id: string,
+    actor: AuthenticatedUser,
+  ): Promise<AttendanceEntity> {
     const entity = await this.attendanceRepository.findOne({ where: { id } });
     if (!entity) throw new NotFoundException('Attendance record not found');
     this.assertTenantAccess(entity.tenantId, actor);
@@ -144,11 +149,17 @@ export class AttendanceService {
     }
 
     if (dto.trainingSessionId) {
-      await this.ensureSessionBelongsToTenant(dto.trainingSessionId, entity.tenantId);
+      await this.ensureSessionBelongsToTenant(
+        dto.trainingSessionId,
+        entity.tenantId,
+      );
     }
 
     if (dto.goalkeeperId) {
-      await this.ensureGoalkeeperBelongsToTenant(dto.goalkeeperId, entity.tenantId);
+      await this.ensureGoalkeeperBelongsToTenant(
+        dto.goalkeeperId,
+        entity.tenantId,
+      );
     }
 
     Object.assign(entity, {
@@ -195,12 +206,19 @@ export class AttendanceService {
   }
 
   private async ensureTenantExists(tenantId: string) {
-    const tenant = await this.tenantsRepository.findOne({ where: { id: tenantId } });
+    const tenant = await this.tenantsRepository.findOne({
+      where: { id: tenantId },
+    });
     if (!tenant) throw new NotFoundException('Tenant not found');
   }
 
-  private async ensureSessionBelongsToTenant(sessionId: string, tenantId: string) {
-    const session = await this.sessionsRepository.findOne({ where: { id: sessionId } });
+  private async ensureSessionBelongsToTenant(
+    sessionId: string,
+    tenantId: string,
+  ) {
+    const session = await this.sessionsRepository.findOne({
+      where: { id: sessionId },
+    });
     if (!session) throw new NotFoundException('Training session not found');
     if (session.tenantId !== tenantId) {
       throw new BadRequestException(
@@ -216,7 +234,8 @@ export class AttendanceService {
     const goalkeeper = await this.goalkeepersRepository.findOne({
       where: { id: goalkeeperId },
     });
-    if (!goalkeeper) throw new NotFoundException('Goalkeeper profile not found');
+    if (!goalkeeper)
+      throw new NotFoundException('Goalkeeper profile not found');
     if (goalkeeper.tenantId !== tenantId) {
       throw new BadRequestException(
         'Goalkeeper does not belong to the provided tenant',

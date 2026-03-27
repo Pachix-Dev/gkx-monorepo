@@ -34,7 +34,11 @@ import {
 } from './entities/email-action-token.entity';
 import { MailService } from './mail.service';
 import { Role } from './roles.enum';
-import { TenantEntity, TenantPlan, TenantStatus } from '../tenants/tenant.entity';
+import {
+  TenantEntity,
+  TenantPlan,
+  TenantStatus,
+} from '../tenants/tenant.entity';
 import { UserEntity, UserStatus } from '../users/user.entity';
 import {
   PublicTenantModel,
@@ -63,13 +67,17 @@ export class AuthService {
 
   async registerTenant(dto: RegisterTenantDto) {
     const email = dto.email.toLowerCase();
-    const existingUser = await this.usersRepository.findOne({ where: { email } });
+    const existingUser = await this.usersRepository.findOne({
+      where: { email },
+    });
     if (existingUser) {
       throw new ConflictException('Email already in use');
     }
 
     const slug = dto.tenantSlug ?? this.slugify(dto.tenantName);
-    const existingTenant = await this.tenantsRepository.findOne({ where: { slug } });
+    const existingTenant = await this.tenantsRepository.findOne({
+      where: { slug },
+    });
     if (existingTenant) {
       throw new ConflictException('Tenant slug already in use');
     }
@@ -100,7 +108,10 @@ export class AuthService {
       EmailActionTokenType.VERIFY_EMAIL,
       EMAIL_VERIFICATION_TOKEN_EXPIRES_IN_SECONDS,
     );
-    await this.mailService.sendVerificationEmail(savedUser.email, verificationToken);
+    await this.mailService.sendVerificationEmail(
+      savedUser.email,
+      verificationToken,
+    );
 
     return {
       tenant: this.toPublicTenant(savedTenant),
@@ -121,7 +132,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -146,9 +160,12 @@ export class AuthService {
     let payload: JwtPayload;
 
     try {
-      payload = await this.jwtService.verifyAsync<JwtPayload>(dto.refreshToken, {
-        secret: JWT_REFRESH_SECRET,
-      });
+      payload = await this.jwtService.verifyAsync<JwtPayload>(
+        dto.refreshToken,
+        {
+          secret: JWT_REFRESH_SECRET,
+        },
+      );
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
@@ -184,7 +201,9 @@ export class AuthService {
     session.revokedAt = new Date();
     await this.sessionsRepository.save(session);
 
-    const user = await this.usersRepository.findOne({ where: { id: payload.sub } });
+    const user = await this.usersRepository.findOne({
+      where: { id: payload.sub },
+    });
     if (!user) {
       throw new UnauthorizedException('User no longer exists');
     }
@@ -252,7 +271,9 @@ export class AuthService {
 
     if (dto.email) {
       const email = dto.email.toLowerCase();
-      const emailInUse = await this.usersRepository.findOne({ where: { email } });
+      const emailInUse = await this.usersRepository.findOne({
+        where: { email },
+      });
       if (emailInUse && emailInUse.id !== existingUser.id) {
         throw new ConflictException('Email already in use');
       }
@@ -337,7 +358,9 @@ export class AuthService {
       EmailActionTokenType.RESET_PASSWORD,
     );
 
-    const user = await this.usersRepository.findOne({ where: { id: actionToken.userId } });
+    const user = await this.usersRepository.findOne({
+      where: { id: actionToken.userId },
+    });
     if (!user) {
       throw new NotFoundException('User not found');
     }
