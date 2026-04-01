@@ -10,7 +10,7 @@ type EditorAssetGroup = {
   items: EditorAsset[];
 };
 
-type ToolPanel = "backgrounds" | "text" | "elements" | "layers";
+type ToolPanel = "backgrounds" | "text" | "elements" | "layers" | "ai";
 type LinePattern = "solid" | "dashed" | "dotted" | "discontinuous";
 type ArrowHeadType = "none" | "triangle" | "circle" | "square" | "bar";
 

@@ -4,7 +4,7 @@ function endpoint(path: string) {
   const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
   const normalizedBase = base.endsWith("/") ? base.slice(0, -1) : base;
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${normalizedBase}${normalizedPath}`;
+  return `${normalizedBase}/api${normalizedPath}`;
 }
 
 async function fetchReport(path: string): Promise<Blob> {

@@ -8,6 +8,8 @@ import { ExercisesController } from './exercises.controller';
 import { ExercisesNestedController } from './exercises-nested.controller';
 import { ExercisesTacticalController } from './exercises-tactical.controller';
 import { ExercisesService } from './exercises.service';
+import { TacticalPlayGeneratorOpenRouterService } from './tactical-play-generator-openrouter.service';
+import { TacticalPlayGeneratorService } from './tactical-play-generator.service';
 
 @Module({
   imports: [
@@ -22,7 +24,12 @@ import { ExercisesService } from './exercises.service';
     ExercisesNestedController,
     ExercisesTacticalController,
   ],
-  providers: [ExercisesService, TacticalPreviewStorageService],
+  providers: [
+    ExercisesService,
+    TacticalPreviewStorageService,
+    TacticalPlayGeneratorService,
+    TacticalPlayGeneratorOpenRouterService,
+  ],
   exports: [ExercisesService, TypeOrmModule],
 })
 export class ExercisesModule {}

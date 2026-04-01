@@ -1,13 +1,16 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Get,
-  Put,
+  HttpCode,
+  HttpStatus,
   Param,
-  Body,
-  UseGuards,
   ParseUUIDPipe,
+  Post,
+  Put,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import {
@@ -29,9 +32,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Role } from '../auth/roles.enum';
-import { UpdateTacticalDesignDto } from './dto/update-tactical-design.dto';
+import { GeneratePlayDto } from './dto/generate-play.dto';
+import { GeneratePlayResponseDto } from './dto/generate-play-response.dto';
 import { TacticalDesignResponseDto } from './dto/tactical-design-response.dto';
+import { UpdateTacticalDesignDto } from './dto/update-tactical-design.dto';
 import { ExercisesService } from './exercises.service';
+import { TacticalPlayGeneratorOpenRouterService } from './tactical-play-generator-openrouter.service';
+import { TacticalPlayGeneratorService } from './tactical-play-generator.service';
 
 interface UploadedTacticalPreview {
   mimetype: string;
@@ -43,7 +50,11 @@ interface UploadedTacticalPreview {
 @ApiTags('Exercises - Tactical Design')
 @ApiBearerAuth('jwt-auth')
 export class ExercisesTacticalController {
-  constructor(private readonly exercisesService: ExercisesService) {}
+  constructor(
+    private readonly exercisesService: ExercisesService,
+    private readonly tacticalPlayGenerator: TacticalPlayGeneratorService,
+    private readonly tacticalPlayGeneratorOpenRouter: TacticalPlayGeneratorOpenRouterService,
+  ) {}
 
   @Get(':id/tactical')
   @Roles(Role.SUPER_ADMIN, Role.USER)
@@ -62,6 +73,64 @@ export class ExercisesTacticalController {
     return {
       success: true,
       message: 'Tactical design retrieved successfully',
+      data,
+    };
+  }
+
+  @Post(':id/tactical/generate')
+  @Roles(Role.SUPER_ADMIN, Role.USER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Generar jugada táctica con IA',
+    description:
+      'Envía un prompt en lenguaje natural y recibe elementos tácticos listos para insertar en el editor. Requiere OPENAI_API_KEY configurado en el servidor.',
+  })
+  @ApiUuidParam('id', 'Identificador del ejercicio')
+  @ApiTypedSuccessResponse({
+    message: 'Play generated successfully',
+    model: GeneratePlayResponseDto,
+  })
+  @ApiCommonErrorResponses()
+  async generatePlay(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: GeneratePlayDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.tacticalPlayGenerator.generatePlay(id, dto, user);
+    return {
+      success: true,
+      message: 'Play generated successfully',
+      data,
+    };
+  }
+
+  @Post(':id/tactical/generate-openrouter')
+  @Roles(Role.SUPER_ADMIN, Role.USER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Generar jugada táctica con IA (OpenRouter)',
+    description:
+      'Ruta paralela de pruebas con OpenRouter. Requiere OPENROUTER_API_KEY configurado en el servidor.',
+  })
+  @ApiUuidParam('id', 'Identificador del ejercicio')
+  @ApiTypedSuccessResponse({
+    message: 'Play generated successfully (OpenRouter)',
+    model: GeneratePlayResponseDto,
+  })
+  @ApiCommonErrorResponses()
+  async generatePlayOpenRouter(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: GeneratePlayDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.tacticalPlayGeneratorOpenRouter.generatePlay(
+      id,
+      dto,
+      user,
+    );
+    return {
+      success: true,
+      message: 'Play generated successfully (OpenRouter)',
       data,
     };
   }

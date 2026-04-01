@@ -47,6 +47,42 @@ export async function updateTacticalDesign(
   return extractData<TacticalDesignResponse>(payload);
 }
 
+// ─── Play generation ──────────────────────────────────────────────────────────
+
+export type GeneratePlayMode = "replace" | "append";
+
+export type GeneratePlayInput = {
+  prompt: string;
+  mode?: GeneratePlayMode;
+  category?: string;
+  goalkeepersCount?: number;
+  backgroundId?: string;
+};
+
+export type GeneratePlayResponse = {
+  backgroundId: string | null;
+  backgroundSrc: string | null;
+  elements: Array<Record<string, unknown>>;
+  summary: string;
+  warnings: string[];
+};
+
+export async function generateTacticalPlay(
+  exerciseId: string,
+  input: GeneratePlayInput,
+): Promise<GeneratePlayResponse> {
+  const payload = await apiRequest<unknown>(
+    `/exercises/${exerciseId}/tactical/generate-openrouter`,
+    {
+      method: "POST",
+      auth: true,
+      body: input,
+    },
+  );
+
+  return extractData<GeneratePlayResponse>(payload);
+}
+
 export async function uploadTacticalPreview(
   exerciseId: string,
   file: Blob

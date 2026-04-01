@@ -13,8 +13,8 @@ import { useTrainingSessionsQuery } from "@/features/training-sessions/hooks/use
 
 function labelClass(disabled: boolean) {
   return disabled
-    ? "rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-2 text-sm text-zinc-400"
-    : "rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm text-zinc-700";
+    ? "rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm text-zinc-500"
+    : "rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-zinc-100 hover:bg-zinc-800 transition";
 }
 
 export function ReportsClient() {
@@ -53,22 +53,22 @@ export function ReportsClient() {
 
   return (
     <section className="space-y-5">
-      <header className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+      <header className="rounded-2xl border border-zinc-700 bg-zinc-900 p-5 shadow-sm">
+        <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">
           Reports
         </p>
-        <h2 className="mt-1 text-2xl font-bold text-zinc-900">
+        <h2 className="mt-1 text-2xl font-bold text-zinc-100">
           Exportador tecnico PDF
         </h2>
-        <p className="mt-1 text-sm text-zinc-600">
+        <p className="mt-1 text-sm text-zinc-400">
           Genera reportes de rendimiento por portero, resumen de equipo y
           detalle de sesion.
         </p>
       </header>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <article className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-zinc-500">
+        <article className="rounded-2xl border border-zinc-700 bg-zinc-900 p-5 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-zinc-300">
             Goalkeeper report
           </h3>
 
@@ -76,7 +76,7 @@ export function ReportsClient() {
             <select
               value={goalkeeperId}
               onChange={(event) => setGoalkeeperId(event.target.value)}
-              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+              className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
             >
               <option value="">Selecciona portero</option>
               {goalkeepers.map((gk) => (
@@ -91,13 +91,13 @@ export function ReportsClient() {
                 type="date"
                 value={from}
                 onChange={(event) => setFrom(event.target.value)}
-                className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+                className="rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
               />
               <input
                 type="date"
                 value={to}
                 onChange={(event) => setTo(event.target.value)}
-                className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+                className="rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
               />
             </div>
 
@@ -121,8 +121,8 @@ export function ReportsClient() {
           </div>
         </article>
 
-        <article className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-zinc-500">
+        <article className="rounded-2xl border border-zinc-700 bg-zinc-900 p-5 shadow-sm">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-zinc-300">
             Team report
           </h3>
 
@@ -130,7 +130,7 @@ export function ReportsClient() {
             <select
               value={teamId}
               onChange={(event) => setTeamId(event.target.value)}
-              className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+              className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
             >
               <option value="">Selecciona equipo</option>
               {teams.map((team) => (
@@ -145,13 +145,13 @@ export function ReportsClient() {
                 type="date"
                 value={from}
                 onChange={(event) => setFrom(event.target.value)}
-                className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+                className="rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
               />
               <input
                 type="date"
                 value={to}
                 onChange={(event) => setTo(event.target.value)}
-                className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+                className="rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
               />
             </div>
 
@@ -176,8 +176,8 @@ export function ReportsClient() {
         </article>
       </div>
 
-      <article className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-zinc-500">
+      <article className="rounded-2xl border border-zinc-700 bg-zinc-900 p-5 shadow-sm">
+        <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-zinc-300">
           Session report
         </h3>
 
@@ -185,7 +185,7 @@ export function ReportsClient() {
           <select
             value={sessionId}
             onChange={(event) => setSessionId(event.target.value)}
-             className="min-w-65 flex-1 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900"
+             className="min-w-65 flex-1 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
           >
             <option value="">Selecciona sesion</option>
             {sortedSessions.map((session) => (

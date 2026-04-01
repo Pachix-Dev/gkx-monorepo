@@ -2,6 +2,7 @@ import type { ToolPanel } from "./types";
 
 const TOOL_PANELS: Array<{ id: ToolPanel; label: string }> = [
   { id: "elements", label: "Elements" },
+  { id: "ai", label: "IA" },
   { id: "text", label: "Text" },
   { id: "backgrounds", label: "Background" },
   { id: "layers", label: "Layers" },

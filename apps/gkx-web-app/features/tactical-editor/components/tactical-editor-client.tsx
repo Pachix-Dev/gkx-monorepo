@@ -24,6 +24,7 @@ import {
 import { SelectedElementPanel } from "./selected-element-panel";
 import { buildEditorStore, TacticalEditorStoreContext, useTacticalEditorStore } from "./tactical-editor-store";
 import { useTacticalDesignSync } from "../../exercises/hooks/use-tactical-design-sync";
+import { AiPanel } from "./ai-panel";
 import { Fragment } from "react";
 
 const FIXED_STAGE_WIDTH = 1300;
@@ -518,6 +519,22 @@ function TacticalEditorClientContent({ backgrounds, shapeGroups, exerciseId }: T
 
   const clearBoard = () => {
     setElements([]);
+    setSelectedId(null);
+  };
+
+  const applyGeneratedPlay = (
+    mode: "replace" | "append",
+    generatedElements: EditorElement[],
+    generatedBackgroundSrc: string | null,
+  ) => {
+    setElements((current) =>
+      mode === "replace" ? generatedElements : [...current, ...generatedElements],
+    );
+
+    if (generatedBackgroundSrc) {
+      setBackgroundSrc(generatedBackgroundSrc);
+    }
+
     setSelectedId(null);
   };
 
@@ -1027,6 +1044,16 @@ function TacticalEditorClientContent({ backgrounds, shapeGroups, exerciseId }: T
       );
     }
 
+    if (panelId === "ai") {
+      return (
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 3l1.5 3.5L17 8l-3.5 1.5L12 13l-1.5-3.5L7 8l3.5-1.5L12 3z" />
+          <path d="M19 13l.9 2.1L22 16l-2.1.9L19 19l-.9-2.1L16 16l2.1-.9L19 13z" />
+          <path d="M6 14l1.2 2.8L10 18l-2.8 1.2L6 22l-1.2-2.8L2 18l2.8-1.2L6 14z" />
+        </svg>
+      );
+    }
+
     return (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <rect x="5" y="4" width="14" height="4" rx="1" />
@@ -1266,6 +1293,13 @@ function TacticalEditorClientContent({ backgrounds, shapeGroups, exerciseId }: T
                       ))}
                     </div>
                   </div>
+                ) : null}
+
+                {activePanel === "ai" ? (
+                  <AiPanel
+                    exerciseId={exerciseId}
+                    onApply={applyGeneratedPlay}
+                  />
                 ) : null}
 
                 {activePanel === "layers" ? (

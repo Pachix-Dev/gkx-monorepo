@@ -49,6 +49,40 @@ const PLAN_RANK: Record<SubscriptionPlan, number> = {
   ENTERPRISE: 3,
 };
 
+const PLAN_FEATURES: Record<
+  SubscriptionPlan,
+  { text: string; included: boolean }[]
+> = {
+  FREE: [
+    { text: "1 equipo", included: true },
+    { text: "3 usuarios", included: true },
+    { text: "Soporte base", included: true },
+    { text: "Automatizaciones avanzadas", included: false },
+    { text: "Multi-sede", included: false },
+  ],
+  BASIC: [
+    { text: "5 equipos", included: true },
+    { text: "10 usuarios", included: true },
+    { text: "Planificacion semanal", included: true },
+    { text: "Soporte prioritario", included: false },
+    { text: "Multi-sede", included: false },
+  ],
+  PRO: [
+    { text: "20 equipos", included: true },
+    { text: "50 usuarios", included: true },
+    { text: "Analitica avanzada", included: true },
+    { text: "Biblioteca de sesiones", included: true },
+    { text: "Multi-sede", included: false },
+  ],
+  ENTERPRISE: [
+    { text: "Equipos y usuarios ilimitados", included: true },
+    { text: "Operacion multi-sede", included: true },
+    { text: "Soporte prioritario", included: true },
+    { text: "Onboarding dedicado", included: true },
+    { text: "Flujos personalizados", included: true },
+  ],
+};
+
 function formatDateLabel(value: string | null | undefined) {
   if (!value) return "-";
   const parsed = new Date(value);
@@ -142,15 +176,15 @@ function SuperAdminSubscriptionsPanel() {
     };
 
   return (
-    <article className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <article className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-sm shadow-black/20">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+        <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">
           SUPER_ADMIN
         </p>
         <select
           value={effectiveTenantId}
           onChange={(event) => setSelectedTenantId(event.target.value)}
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800"
+          className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100"
         >
           {tenants.map((tenant) => (
             <option key={tenant.id} value={tenant.id}>
@@ -160,21 +194,21 @@ function SuperAdminSubscriptionsPanel() {
         </select>
       </div>
 
-      <h3 className="mt-2 text-lg font-bold text-zinc-900">
+      <h3 className="mt-2 text-lg font-bold text-white">
         Gestion de suscripciones por tenant
       </h3>
 
       {tenantsQuery.isLoading || subscriptionsQuery.isLoading ? (
-        <p className="mt-3 text-sm text-zinc-500">Cargando datos...</p>
+        <p className="mt-3 text-sm text-zinc-400">Cargando datos...</p>
       ) : filteredSubscriptions.length === 0 ? (
-        <p className="mt-3 rounded-lg border border-dashed border-zinc-300 p-3 text-sm text-zinc-600">
+        <p className="mt-3 rounded-lg border border-dashed border-zinc-700 p-3 text-sm text-zinc-300">
           No hay suscripciones para el tenant seleccionado.
         </p>
       ) : (
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-xs uppercase tracking-[0.12em] text-zinc-500">
+              <tr className="border-b border-zinc-800 text-left text-xs uppercase tracking-[0.12em] text-zinc-400">
                 <th className="px-2 py-2">Plan</th>
                 <th className="px-2 py-2">Estado</th>
                 <th className="px-2 py-2">Inicio</th>
@@ -187,9 +221,9 @@ function SuperAdminSubscriptionsPanel() {
               {filteredSubscriptions.map((item) => {
                 const draft = getDraft(item);
                 return (
-                  <tr key={item.id} className="border-b border-zinc-100">
+                  <tr key={item.id} className="border-b border-zinc-900">
                     <td className="px-2 py-2">
-                      <span className="inline-flex rounded-md bg-zinc-100 px-2 py-1 text-xs font-semibold text-zinc-700">
+                      <span className="inline-flex rounded-md bg-zinc-900 px-2 py-1 text-xs font-semibold text-zinc-200">
                         {item.plan}
                       </span>
                     </td>
@@ -199,7 +233,7 @@ function SuperAdminSubscriptionsPanel() {
                         onChange={(event) =>
                           onChangeDraft(item.id, event.target.value as SubscriptionStatus)
                         }
-                        className="rounded-lg border border-zinc-300 px-2 py-1 text-black"
+                        className="rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1 text-zinc-100"
                       >
                         {STATUS_OPTIONS.map((status) => (
                           <option key={status} value={status}>
@@ -209,17 +243,17 @@ function SuperAdminSubscriptionsPanel() {
                       </select>
                     </td>
                     <td className="px-2 py-2">
-                      <span className="text-zinc-700">
+                      <span className="text-zinc-200">
                         {formatDateLabel(item.currentPeriodStart)}
                       </span>
                     </td>
                     <td className="px-2 py-2">
-                      <span className="text-zinc-700">
+                      <span className="text-zinc-200">
                         {formatDateLabel(item.currentPeriodEnd)}
                       </span>
                     </td>
                     <td className="px-2 py-2">
-                      <span className="font-mono text-xs text-zinc-600">
+                      <span className="font-mono text-xs text-zinc-300">
                         {item.externalRef ?? "-"}
                       </span>
                     </td>
@@ -229,7 +263,7 @@ function SuperAdminSubscriptionsPanel() {
                             type="button"
                             onClick={() => void saveRow(item)}
                             disabled={updateMutation.isPending}
-                            className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60"
                           >
                             Guardar
                           </button>
@@ -238,7 +272,7 @@ function SuperAdminSubscriptionsPanel() {
                             type="button"
                             onClick={() => void cancelSpeiRow(item)}
                             disabled={cancelSpeiMutation.isPending}
-                            className="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 disabled:opacity-60"
+                            className="rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-semibold text-red-300 disabled:opacity-60"
                           >
                             Cancelar SPEI
                           </button>
@@ -272,18 +306,18 @@ function SuperAdminSpeiReviewPanel() {
   };
 
   return (
-    <article className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+    <article className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-sm shadow-black/20">
+      <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">
         SUPER_ADMIN
       </p>
-      <h3 className="mt-2 text-lg font-bold text-zinc-900">
+      <h3 className="mt-2 text-lg font-bold text-white">
         Revisar pagos SPEI pendientes
       </h3>
 
       {requestsQuery.isLoading ? (
-        <p className="mt-3 text-sm text-zinc-500">Cargando solicitudes...</p>
+        <p className="mt-3 text-sm text-zinc-400">Cargando solicitudes...</p>
       ) : (requestsQuery.data?.length ?? 0) === 0 ? (
-        <p className="mt-3 rounded-lg border border-dashed border-zinc-300 p-3 text-sm text-zinc-600">
+        <p className="mt-3 rounded-lg border border-dashed border-zinc-700 p-3 text-sm text-zinc-300">
           No hay pagos SPEI pendientes de revision.
         </p>
       ) : (
@@ -291,13 +325,13 @@ function SuperAdminSpeiReviewPanel() {
           {requestsQuery.data?.map((request) => (
             <div
               key={request.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200 p-3"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-3"
             >
               <div>
-                <p className="text-sm font-semibold text-zinc-900">
+                <p className="text-sm font-semibold text-white">
                   Tenant {request.tenantId.slice(0, 8)}... / Plan {request.requestedPlan}
                 </p>
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-zinc-400">
                   Metodo: {request.paymentMethod} · {new Date(request.createdAt).toLocaleString("es-ES")}
                 </p>
               </div>
@@ -838,16 +872,43 @@ export function BillingClient() {
                 const isCurrentPlan = PLAN_RANK[offer.plan] === PLAN_RANK[currentPlan];
                 const isDowngrade = PLAN_RANK[offer.plan] < PLAN_RANK[currentPlan];
                 const isUpgrade = PLAN_RANK[offer.plan] > PLAN_RANK[currentPlan];
+                const isRecommended = offer.plan === "PRO";
 
                 return (
-                  <article key={offer.plan} className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+                  <article
+                    key={offer.plan}
+                    className={`rounded-2xl border p-4 ${
+                      isCurrentPlan
+                        ? "border-primary/70 bg-zinc-900"
+                        : "border-zinc-800 bg-zinc-950"
+                    }`}
+                  >
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-lg font-bold text-white">{offer.label}</h4>
-                      {isCurrentPlan ? (
-                        <span className="rounded-full bg-primary/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
-                          Current
-                        </span>
-                      ) : null}
+                      <div>
+                        <h4 className="text-lg font-bold text-white">{offer.label}</h4>
+                        {isRecommended ? (
+                          <span className="mt-1 inline-flex rounded-full bg-emerald-500/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-300">
+                            Recommended
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        {isCurrentPlan ? (
+                          <span className="rounded-full bg-primary/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
+                            Current
+                          </span>
+                        ) : null}
+                        {isDowngrade ? (
+                          <span className="rounded-full bg-sky-500/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-sky-300">
+                            Downgrade
+                          </span>
+                        ) : null}
+                        {isUpgrade ? (
+                          <span className="rounded-full bg-violet-500/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-violet-300">
+                            Upgrade
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
 
                     <p className="mt-2 text-2xl font-bold text-white">
@@ -856,19 +917,34 @@ export function BillingClient() {
                     </p>
                     <p className="mt-2 text-sm text-zinc-300">{offer.description}</p>
 
-                    <ul className="mt-4 space-y-1 text-xs text-zinc-300">
-                      {offer.paymentMethods.length === 0 ? (
-                        <li>• Sin pago recurrente</li>
-                      ) : (
-                        <li>• Metodos: {offer.paymentMethods.join(" + ")}</li>
-                      )}
-                      <li>
-                        • Tarjeta: {offer.cardEnabled ? "Disponible" : "No disponible"}
+                    <div className="mt-4 h-px w-full bg-zinc-800" />
+
+                    <ul className="mt-4 space-y-2 text-xs">
+                      {(PLAN_FEATURES[offer.plan] ?? []).map((feature) => (
+                        <li
+                          key={feature.text}
+                          className={`flex items-start gap-2 ${
+                            feature.included ? "text-zinc-100" : "text-zinc-500"
+                          }`}
+                        >
+                          <span
+                            className={`mt-[2px] inline-block h-4 w-4 rounded-full text-center text-[10px] leading-4 ${
+                              feature.included
+                                ? "bg-emerald-500/30 text-emerald-300"
+                                : "bg-zinc-800 text-zinc-500"
+                            }`}
+                          >
+                            {feature.included ? "+" : "-"}
+                          </span>
+                          <span>{feature.text}</span>
+                        </li>
+                      ))}
+                      <li className="text-zinc-400">
+                        Metodos: {offer.paymentMethods.length > 0 ? offer.paymentMethods.join(" + ") : "Sin pago recurrente"}
                       </li>
-                      {offer.plan === "FREE" ? <li>• Sin costo mensual</li> : null}
                     </ul>
 
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="mt-5 flex flex-wrap gap-2">
                       {offer.plan === "FREE" ? (
                         <button
                           type="button"
@@ -879,7 +955,7 @@ export function BillingClient() {
                             cancelAutoRenewMutation.isPending ||
                             cancelSpeiAtPeriodEndMutation.isPending
                           }
-                          className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-100 disabled:opacity-60"
+                          className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs font-semibold text-zinc-100 disabled:opacity-60"
                         >
                           {activeSubscriptionQuery.data?.cancelAtPeriodEnd
                             ? "Cambio a FREE programado"
@@ -891,7 +967,7 @@ export function BillingClient() {
                         <button
                           type="button"
                           disabled
-                          className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-300 disabled:opacity-70"
+                          className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs font-semibold text-zinc-300 disabled:opacity-70"
                         >
                           Current plan
                         </button>
@@ -903,7 +979,7 @@ export function BillingClient() {
                             type="button"
                             onClick={() => void handlePlanChange(offer.plan, "CARD")}
                             disabled={changePlanMutation.isPending || !offer.cardEnabled}
-                            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+                            className="w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-60"
                           >
                             Pagar con tarjeta
                           </button>
@@ -911,7 +987,7 @@ export function BillingClient() {
                             type="button"
                             onClick={() => void handlePlanChange(offer.plan, "SPEI")}
                             disabled={changePlanMutation.isPending}
-                            className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-100 disabled:opacity-60"
+                            className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs font-semibold text-zinc-100 disabled:opacity-60"
                           >
                             Solicitar por SPEI
                           </button>
@@ -923,7 +999,7 @@ export function BillingClient() {
                           type="button"
                           onClick={() => void handleScheduleDowngrade(offer.plan)}
                           disabled={scheduleDowngradeMutation.isPending}
-                          className="rounded-lg border border-primary/40 px-3 py-1.5 text-xs font-semibold text-primary disabled:opacity-60"
+                          className="w-full rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary disabled:opacity-60"
                         >
                           Programar downgrade
                         </button>
