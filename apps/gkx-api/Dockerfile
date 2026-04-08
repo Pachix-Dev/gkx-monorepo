@@ -1,31 +1,33 @@
-FROM node:20-alpine AS deps
+FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY apps/gkx-api/package.json apps/gkx-api/package.json
-COPY apps/gkx-web-app/package.json apps/gkx-web-app/package.json
 COPY packages/shared/package.json packages/shared/package.json
 
-RUN npm ci
+RUN npm ci --workspace api --workspace shared --include-workspace-root=false
 
-FROM node:20-alpine AS builder
-WORKDIR /app
+COPY apps/gkx-api apps/gkx-api
+COPY packages/shared packages/shared
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-RUN npm run build:api
-RUN npm prune --omit=dev
+RUN npm run build -w api
 
 FROM node:20-alpine AS runner
-WORKDIR /app/apps/gkx-api
+WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
-COPY --from=builder /app/node_modules /app/node_modules
-COPY --from=builder /app/apps/gkx-api/dist ./dist
-COPY --from=builder /app/apps/gkx-api/package.json ./package.json
+COPY package.json package-lock.json ./
+COPY apps/gkx-api/package.json apps/gkx-api/package.json
+COPY packages/shared/package.json packages/shared/package.json
+
+RUN npm ci --omit=dev --workspace api --workspace shared --include-workspace-root=false \
+    && npm cache clean --force
+
+COPY --from=builder /app/apps/gkx-api/dist /app/apps/gkx-api/dist
+
+WORKDIR /app/apps/gkx-api
 
 EXPOSE 3000
 

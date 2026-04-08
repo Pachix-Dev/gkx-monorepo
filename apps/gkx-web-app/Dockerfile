@@ -1,35 +1,29 @@
-FROM node:20-alpine AS deps
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-COPY apps/gkx-api/package.json apps/gkx-api/package.json
-COPY apps/gkx-web-app/package.json apps/gkx-web-app/package.json
-COPY packages/shared/package.json packages/shared/package.json
-
-RUN npm ci
-
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY package.json package-lock.json ./
+COPY apps/gkx-web-app/package.json apps/gkx-web-app/package.json
+COPY packages/shared/package.json packages/shared/package.json
 
-RUN npm run build:web
-RUN npm prune --omit=dev
+RUN npm ci --workspace web --workspace shared --include-workspace-root=false
+
+COPY apps/gkx-web-app apps/gkx-web-app
+COPY packages/shared packages/shared
+
+RUN npm run build -w web
 
 FROM node:20-alpine AS runner
-WORKDIR /app/apps/gkx-web-app
+WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
-COPY --from=builder /app/node_modules /app/node_modules
-COPY --from=builder /app/package.json /app/package.json
-COPY --from=builder /app/apps/gkx-web-app/package.json ./package.json
-COPY --from=builder /app/apps/gkx-web-app/.next ./.next
-COPY --from=builder /app/apps/gkx-web-app/public ./public
-COPY --from=builder /app/apps/gkx-web-app/next.config.ts ./next.config.ts
+COPY --from=builder /app/apps/gkx-web-app/.next/standalone ./
+COPY --from=builder /app/apps/gkx-web-app/.next/static ./apps/gkx-web-app/.next/static
+COPY --from=builder /app/apps/gkx-web-app/public ./apps/gkx-web-app/public
+
+WORKDIR /app/apps/gkx-web-app
 
 EXPOSE 3000
 
-CMD ["node", "/app/node_modules/next/dist/bin/next", "start", "-H", "0.0.0.0", "-p", "3000"]
+CMD ["node", "server.js"]
