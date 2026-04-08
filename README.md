@@ -69,3 +69,7 @@ apps/
 - Este repositorio usa npm workspaces (`apps/*`).
 - Mantener una sola instalación de dependencias en la raíz.
 - Evitar `node_modules` dentro de cada app.
+
+## CI/CD
+
+- Guía de deploy en VPS con Docker: [docs/deploy-vps-docker.md](docs/deploy-vps-docker.md)
