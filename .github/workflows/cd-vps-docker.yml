@@ -3,7 +3,7 @@ name: CD VPS Docker
 on:
   push:
     branches:
-      - main
+      - master
 
 permissions:
   contents: read
