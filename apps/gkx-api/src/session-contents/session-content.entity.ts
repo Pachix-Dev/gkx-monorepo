@@ -8,7 +8,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { TenantEntity } from '../tenants/tenant.entity';
-import { TrainingContentEntity } from '../training-contents/training-content.entity';
 import { TrainingSessionEntity } from '../training-sessions/training-session.entity';
 
 @Entity({ name: 'session_contents' })

@@ -3,8 +3,7 @@
 import {
   getTacticalDesign,
   updateTacticalDesign,
-  UpdateTacticalDesignInput,
-  TacticalDesignResponse,
+  UpdateTacticalDesignInput,  
 } from "@/lib/api/exercises-tactical";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
