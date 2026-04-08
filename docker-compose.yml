@@ -33,8 +33,7 @@ services:
     ports:
       - '3021:3000'
     depends_on:
-      gkx-api:
-        condition: service_healthy
+      - gkx-api
 
 volumes:
   gkx_api_uploads:

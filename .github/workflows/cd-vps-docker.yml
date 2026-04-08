@@ -61,4 +61,18 @@ jobs:
             echo "${{ secrets.GHCR_READ_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
             docker compose --env-file .env.vps pull
             IMAGE_TAG=${{ github.sha }} docker compose --env-file .env.vps up -d --remove-orphans
+            docker compose --env-file .env.vps ps
+
+            API_STATUS="$(docker inspect --format='{{.State.Status}}' gkx-api 2>/dev/null || echo not-found)"
+            API_HEALTH="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' gkx-api 2>/dev/null || echo not-found)"
+            echo "gkx-api status: $API_STATUS"
+            echo "gkx-api health: $API_HEALTH"
+
+            if [ "$API_STATUS" != "running" ] || [ "$API_HEALTH" = "unhealthy" ] || [ "$API_HEALTH" = "not-found" ]; then
+              echo "gkx-api is not healthy. Printing diagnostic logs..."
+              docker logs --tail 300 gkx-api || true
+              docker compose --env-file .env.vps logs --no-color --tail 300 gkx-api || true
+              exit 1
+            fi
+
             docker image prune -f
