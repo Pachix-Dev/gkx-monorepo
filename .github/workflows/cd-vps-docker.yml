@@ -34,8 +34,8 @@ jobs:
           file: apps/gkx-api/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ toLower(github.repository_owner)  }}/gkx-api:${{ github.sha }}
-            ghcr.io/${{ toLower(github.repository_owner)  }}/gkx-api:latest
+            ghcr.io/${{ github.repository_owner  }}/gkx-api:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner  }}/gkx-api:latest
 
       - name: Build and push Web image
         uses: docker/build-push-action@v6
@@ -44,8 +44,8 @@ jobs:
           file: apps/gkx-web-app/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ toLower(github.repository_owner)  }}/gkx-web-app:${{ github.sha }}
-            ghcr.io/${{ toLower(github.repository_owner)  }}/gkx-web-app:latest
+            ghcr.io/${{ github.repository_owner  }}/gkx-web-app:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner  }}/gkx-web-app:latest
 
       - name: Deploy in VPS over SSH
         uses: appleboy/ssh-action@v1.2.0
