@@ -24,12 +24,16 @@ cp .env.vps.example .env.vps
 
 ## 3. Conexion a PostgreSQL del host
 
-Como Postgres corre en el host, usa `host.docker.internal` en `DATABASE_URL`.
+Como Postgres corre en el host, configura las variables `DB_*` en `.env.vps`.
 
 Ejemplo:
 
 ```env
-DATABASE_URL=postgres://postgres:TU_PASSWORD@host.docker.internal:5432/gkx_db
+DB_HOST=host.docker.internal
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=TU_PASSWORD
+DB_NAME=gkx_db
 ```
 
 El compose ya incluye `extra_hosts: host.docker.internal:host-gateway` para Linux.

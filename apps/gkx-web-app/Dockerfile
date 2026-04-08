@@ -15,15 +15,21 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 RUN npm run build:web
+RUN npm prune --omit=dev
 
 FROM node:20-alpine AS runner
-WORKDIR /app
+WORKDIR /app/apps/gkx-web-app
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
-COPY --from=builder /app /app
+COPY --from=builder /app/node_modules /app/node_modules
+COPY --from=builder /app/package.json /app/package.json
+COPY --from=builder /app/apps/gkx-web-app/package.json ./package.json
+COPY --from=builder /app/apps/gkx-web-app/.next ./.next
+COPY --from=builder /app/apps/gkx-web-app/public ./public
+COPY --from=builder /app/apps/gkx-web-app/next.config.ts ./next.config.ts
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start", "-w", "web", "--", "-H", "0.0.0.0", "-p", "3000"]
+CMD ["node", "/app/node_modules/next/dist/bin/next", "start", "-H", "0.0.0.0", "-p", "3000"]

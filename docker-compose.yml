@@ -1,0 +1,40 @@
+services:
+  gkx-api:
+    image: ghcr.io/${GHCR_OWNER}/gkx-api:${IMAGE_TAG:-latest}
+    container_name: gkx-api
+    restart: unless-stopped
+    env_file:
+      - ./.env.vps
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - '3020:3000'
+    volumes:
+      - gkx_api_uploads:/app/apps/gkx-api/uploads
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    healthcheck:
+      test: [ 'CMD', 'node', '-e', "require('http').get('http://127.0.0.1:3000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1));" ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+
+  gkx-web:
+    image: ghcr.io/${GHCR_OWNER}/gkx-web-app:${IMAGE_TAG:-latest}
+    container_name: gkx-web
+    restart: unless-stopped
+    env_file:
+      - ./.env.vps
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - '3021:3000'
+    depends_on:
+      gkx-api:
+        condition: service_healthy
+
+volumes:
+  gkx_api_uploads:

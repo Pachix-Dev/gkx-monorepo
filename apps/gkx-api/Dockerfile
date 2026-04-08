@@ -15,6 +15,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 RUN npm run build:api
+RUN npm prune --omit=dev
 
 FROM node:20-alpine AS runner
 WORKDIR /app/apps/gkx-api
