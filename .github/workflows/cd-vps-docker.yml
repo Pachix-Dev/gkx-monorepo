@@ -60,6 +60,11 @@ jobs:
             cd ${{ secrets.VPS_APP_DIR }}
             echo "${{ secrets.GHCR_READ_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
             docker compose --env-file .env.vps pull
+
+            echo "Running database migrations..."
+            IMAGE_TAG=${{ github.sha }} docker compose --profile migrations --env-file .env.vps run --rm migrations
+
+            echo "Starting services..."
             IMAGE_TAG=${{ github.sha }} docker compose --env-file .env.vps up -d --remove-orphans
             docker compose --env-file .env.vps ps
 
@@ -72,6 +77,7 @@ jobs:
               echo "gkx-api is not healthy. Printing diagnostic logs..."
               docker logs --tail 300 gkx-api || true
               docker compose --env-file .env.vps logs --no-color --tail 300 gkx-api || true
+              docker logs --tail 300 gkx-migrations || true
               exit 1
             fi
 

@@ -1,4 +1,19 @@
 services:
+  migrations:
+    image: ghcr.io/${GHCR_OWNER}/gkx-api:${IMAGE_TAG:-latest}
+    container_name: gkx-migrations
+    restart: "no"
+    env_file:
+      - ./.env.vps
+    environment:
+      NODE_ENV: production
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    working_dir: /app/apps/gkx-api
+    command: npm run migration:run
+    profiles:
+      - migrations
+
   gkx-api:
     image: ghcr.io/${GHCR_OWNER}/gkx-api:${IMAGE_TAG:-latest}
     container_name: gkx-api
@@ -10,6 +25,9 @@ services:
       PORT: 3000
     ports:
       - '3020:3000'
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
     volumes:
       - gkx_api_uploads:/app/apps/gkx-api/uploads
     extra_hosts:
@@ -33,7 +51,8 @@ services:
     ports:
       - '3021:3000'
     depends_on:
-      - gkx-api
+      gkx-api:
+        condition: service_healthy
 
 volumes:
   gkx_api_uploads:

@@ -44,7 +44,33 @@ El compose ya incluye `extra_hosts: host.docker.internal:host-gateway` para Linu
 docker login ghcr.io
 
 docker compose --env-file .env.vps pull
+docker compose --profile migrations --env-file .env.vps run --rm migrations
 docker compose --env-file .env.vps up -d
+```
+
+El comando con `--profile migrations` ejecuta las migraciones de TypeORM antes de iniciar la API.
+
+## 4.1 Despliegues posteriores (automático)
+
+Una vez la base de datos esté lista en el primer deploy, los despliegues posteriores ejecutan migraciones automáticamente:
+
+```bash
+docker compose --env-file .env.vps pull
+docker compose --env-file .env.vps up -d
+```
+
+El servicio `migrations` se ejecuta automáticamente cada deploy y luego inicia el API.
+
+## 4.2 Ejecutar migraciones manualmente (si es necesario)
+
+```bash
+docker compose --profile migrations --env-file .env.vps run --rm migrations
+```
+
+O desde el contenedor del API ya corriendo:
+
+```bash
+docker exec gkx-api npm run migration:run
 ```
 
 ## 5. Verificacion
@@ -57,7 +83,19 @@ curl -I http://localhost:3021
 
 Si no tienes endpoint de health, valida un endpoint estable de la API.
 
-## 6. Update de version
+## 6. Ver logs de migraciones
+
+```bash
+docker logs gkx-migrations
+```
+
+O el API:
+
+```bash
+docker logs -f gkx-api
+```
+
+## 7. Update de version
 
 Si publicas imagenes por SHA, puedes desplegar una version puntual:
 
@@ -65,7 +103,9 @@ Si publicas imagenes por SHA, puedes desplegar una version puntual:
 IMAGE_TAG=<sha> docker compose --env-file .env.vps up -d
 ```
 
-## 7. Rollback rapido
+Las migraciones se ejecutan automáticamente.
+
+## 8. Rollback rapido
 
 ```bash
 IMAGE_TAG=<sha_anterior> docker compose --env-file .env.vps up -d
