@@ -25,9 +25,6 @@ services:
       PORT: 3000
     ports:
       - '3020:3000'
-    depends_on:
-      migrations:
-        condition: service_completed_successfully
     volumes:
       - gkx_api_uploads:/app/apps/gkx-api/uploads
     extra_hosts:
