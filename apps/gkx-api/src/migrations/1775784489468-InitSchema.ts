@@ -4,7 +4,6 @@ export class InitSchema1775784489468 implements MigrationInterface {
     name = 'InitSchema1775784489468'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`);
         await queryRunner.query(`CREATE TYPE "public"."tenants_plan_enum" AS ENUM('FREE', 'BASIC', 'PRO', 'ENTERPRISE')`);
         await queryRunner.query(`CREATE TYPE "public"."tenants_status_enum" AS ENUM('ACTIVE', 'INACTIVE')`);
         await queryRunner.query(`CREATE TABLE "tenants" ("id" uuid NOT NULL DEFAULT gen_random_uuid(), "name" character varying(150) NOT NULL, "slug" character varying(150) NOT NULL, "plan" "public"."tenants_plan_enum" NOT NULL DEFAULT 'FREE', "status" "public"."tenants_status_enum" NOT NULL DEFAULT 'ACTIVE', "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_2310ecc5cb8be427097154b18fc" UNIQUE ("slug"), CONSTRAINT "PK_53be67a04681c66b87ee27c9321" PRIMARY KEY ("id"))`);
