@@ -85,7 +85,6 @@ jobs:
               echo "gkx-api is not healthy. Printing diagnostic logs..."
               docker logs --tail 300 gkx-api || true
               docker compose --env-file .env.vps logs --no-color --tail 300 gkx-api || true
-              docker logs --tail 300 gkx-migrations || true
               exit 1
             fi
 

@@ -6,7 +6,7 @@ import { getEditorBackgrounds, getEditorShapeGroups } from "@/features/tactical-
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE_URL = process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL;
 
 async function fetchAuthed<T>(path: string, token: string | undefined): Promise<T | null> {
   if (!API_BASE_URL || !token) return null;

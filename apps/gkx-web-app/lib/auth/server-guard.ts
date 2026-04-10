@@ -2,7 +2,7 @@ import { UserRole } from "@/lib/auth/types";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE_URL = process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL;
 
 export type ServerAuthUser = {
   id: string;
