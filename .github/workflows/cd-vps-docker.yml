@@ -59,13 +59,32 @@ jobs:
             set -e
             cd ${{ secrets.VPS_APP_DIR }}
             echo "${{ secrets.GHCR_READ_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+
+            echo "Checking .env.vps..."
+            if [ ! -f .env.vps ]; then
+              echo "ERROR: .env.vps not found!"
+              exit 1
+            fi
+            grep -E "GHCR_OWNER|DB_HOST" .env.vps || echo "WARNING: Some required variables missing"
+
+            export IMAGE_TAG=${{ github.sha }}
             docker compose --env-file .env.vps pull
 
+            echo "Checking available services..."
+            docker compose --env-file .env.vps config --services
+
             echo "Running database migrations..."
-            IMAGE_TAG=${{ github.sha }} docker compose --profile migrations --env-file .env.vps run --rm migrations
+            docker run --rm \
+              --env-file .env.vps \
+              --network host \
+              ghcr.io/${{ secrets.GHCR_USERNAME }}/gkx-api:${{ github.sha }} \
+              npm run migration:run || {
+              echo "ERROR: Migrations failed."
+              exit 1
+            }
 
             echo "Starting services..."
-            IMAGE_TAG=${{ github.sha }} docker compose --env-file .env.vps up -d --remove-orphans
+            docker compose --env-file .env.vps up -d --remove-orphans
             docker compose --env-file .env.vps ps
 
             API_STATUS="$(docker inspect --format='{{.State.Status}}' gkx-api 2>/dev/null || echo not-found)"
