@@ -34,7 +34,7 @@ export default function RegisterPage() {
         description: result.verificationRequired ? "Revisa tu correo para verificar tu cuenta." : "Cuenta creada exitosamente.",
       });
       form.reset();
-      router.push(`/login?status=registered&email=${encodeURIComponent(values.email)}`);
+      router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "No se pudo completar el registro.";
       sileo.error({ title: "Error de registro", description: message });
