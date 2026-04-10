@@ -22,7 +22,7 @@ describe('AppController', () => {
           service: 'goalkeeper-training-api',
           status: 'ok',
           version: '1.0.0',
-          timestamp: expect.any(String),
+          timestamp: expect.any(String) as string,
         },
       });
     });
@@ -32,8 +32,8 @@ describe('AppController', () => {
     it('should return health check message', () => {
       expect(appController.getHealth()).toEqual({
         status: 'ok',
-        uptime: expect.any(Number),
-        timestamp: expect.any(String),
+        uptime: expect.any(Number) as number,
+        timestamp: expect.any(String) as string,
       });
     });
   });

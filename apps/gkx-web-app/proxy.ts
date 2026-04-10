@@ -7,7 +7,13 @@ function isPublicPath(pathname: string) {
 }
 
 function isAssetPath(pathname: string) {
-  return pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.startsWith("/public") || pathname.startsWith("/editor-assets");
+  return (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon") ||
+    pathname.startsWith("/public") ||
+    pathname.startsWith("/editor-assets") ||
+    /\.(?:png|jpg|jpeg|webp|svg|gif|ico|woff2?|ttf|otf)$/i.test(pathname)
+  );
 }
 
 export function proxy(request: NextRequest) {
@@ -35,5 +41,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|editor-assets).*)"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|editor-assets|.*\\.(?:png|jpg|jpeg|webp|svg|gif|ico|woff2?|ttf|otf)).*)"],
 };
