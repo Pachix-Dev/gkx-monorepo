@@ -43,6 +43,8 @@ jobs:
           context: .
           file: apps/gkx-web-app/Dockerfile
           push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
           tags: |
             ghcr.io/${{ secrets.GHCR_USERNAME  }}/gkx-web-app:${{ github.sha }}
             ghcr.io/${{ secrets.GHCR_USERNAME  }}/gkx-web-app:latest
