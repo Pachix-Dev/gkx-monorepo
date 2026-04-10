@@ -21,6 +21,8 @@
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
     "migration:run:prod": "typeorm migration:run -d dist/data-source.js",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
+    "migration:revert:prod": "typeorm migration:revert -d dist/data-source.js",
+    "migration:show:prod": "typeorm migration:show -d dist/data-source.js",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/data-source.ts",
     "stripe:webhook:listen": "powershell -ExecutionPolicy Bypass -File ./scripts/stripe-webhook-listen.ps1",
     "stripe:webhook:trigger": "powershell -ExecutionPolicy Bypass -File ./scripts/stripe-webhook-trigger.ps1"

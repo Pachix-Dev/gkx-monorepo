@@ -13,6 +13,7 @@ import { resolve } from 'node:path';
  */
 export const AppDataSource = new DataSource({
   type: 'postgres',
+  uuidExtension: 'pgcrypto',
   host: process.env.DB_HOST ?? 'localhost',
   port: Number(process.env.DB_PORT ?? 5432),
   username: process.env.DB_USER ?? 'gkx_user',

@@ -61,19 +61,19 @@ docker run --rm \
   --env-file .env.vps \
   --network host \
   ghcr.io/pachix-dev/gkx-api:latest \
-  npm run migration:run
+  npm run migration:run:prod
 ```
 
 ### Opción B: En el contenedor del API corriendo
 
 ```bash
-docker exec gkx-api npm run migration:run
+docker exec gkx-api npm run migration:run:prod
 ```
 
 ### Opción C: Ver el estado de migraciones sin ejecutarlas
 
 ```bash
-docker exec gkx-api npm run migration:show
+docker exec gkx-api npm run migration:show:prod
 ```
 
 ## 6. Flujo recomendado
@@ -83,7 +83,7 @@ docker exec gkx-api npm run migration:show
 ```bash
 cd /ruta/al/repo
 docker compose --env-file .env.vps pull
-docker run --rm --env-file .env.vps --network host ghcr.io/pachix-dev/gkx-api:latest npm run migration:run
+docker run --rm --env-file .env.vps --network host ghcr.io/pachix-dev/gkx-api:latest npm run migration:run:prod
 docker compose --env-file .env.vps up -d
 ```
 
@@ -95,7 +95,7 @@ docker compose --env-file .env.vps pull
 docker compose --env-file .env.vps up -d --remove-orphans
 
 # Si hay cambios de schema pendientes, ejecuta migraciones:
-docker run --rm --env-file .env.vps --network host ghcr.io/pachix-dev/gkx-api:latest npm run migration:run
+docker run --rm --env-file .env.vps --network host ghcr.io/pachix-dev/gkx-api:latest npm run migration:run:prod
 ```
 
 ## 7. Verificacion
