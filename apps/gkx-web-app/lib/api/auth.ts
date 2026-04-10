@@ -4,7 +4,6 @@ import { extractData } from "@/lib/api/response";
 
 export type RegisterTenantInput = {
   tenantName: string;
-  tenantSlug?: string;
   fullName: string;
   email: string;
   password: string;

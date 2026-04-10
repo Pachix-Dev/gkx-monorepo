@@ -27,7 +27,7 @@ export function VerificationEmailTemplate({
       <Body style={body}>
         <Container style={container}>
           <Section style={header}>
-            <Img src={logoUrl} alt="GKX" width="140" height="46" style={logo} />
+            <Img src={logoUrl} alt="GKX" width="96" height="52" style={logo} />
           </Section>
 
           <Section style={content}>

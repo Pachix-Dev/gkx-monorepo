@@ -5840,10 +5840,6 @@
             "type": "string",
             "example": "Elite GK Academy"
           },
-          "tenantSlug": {
-            "type": "string",
-            "example": "elite-gk-academy"
-          },
           "fullName": {
             "type": "string",
             "example": "Carlos Ramirez"

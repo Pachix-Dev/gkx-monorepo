@@ -1,24 +1,16 @@
 import {
   IsEmail,
   IsNotEmpty,
-  IsOptional,
   IsString,
-  Matches,
   MinLength,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterTenantDto {
   @ApiProperty({ example: 'Elite GK Academy' })
   @IsString()
   @IsNotEmpty()
   tenantName!: string;
-
-  @ApiPropertyOptional({ example: 'elite-gk-academy' })
-  @IsOptional()
-  @IsString()
-  @Matches(/^[a-z0-9-]+$/)
-  tenantSlug?: string;
 
   @ApiProperty({ example: 'Carlos Ramirez' })
   @IsString()

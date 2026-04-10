@@ -74,7 +74,7 @@ export class AuthService {
       throw new ConflictException('Email already in use');
     }
 
-    const slug = dto.tenantSlug ?? this.slugify(dto.tenantName);
+    const slug = this.slugify(dto.tenantName);
     const existingTenant = await this.tenantsRepository.findOne({
       where: { slug },
     });

@@ -29,7 +29,6 @@ describe("auth self-service schemas", () => {
   it("acepta register valido", () => {
     const result = registerSchema.safeParse({
       tenantName: "GKX Academy",
-      tenantSlug: "gkx-academy",
       fullName: "Coach Admin",
       email: "admin@gkacademy.com",
       password: "securepass123",
