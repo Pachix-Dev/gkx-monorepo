@@ -70,19 +70,6 @@ jobs:
             export IMAGE_TAG=${{ github.sha }}
             docker compose --env-file .env.vps pull
 
-            echo "Checking available services..."
-            docker compose --env-file .env.vps config --services
-
-            echo "Running database migrations..."
-            docker run --rm \
-              --env-file .env.vps \
-              --network host \
-              ghcr.io/${{ secrets.GHCR_USERNAME }}/gkx-api:${{ github.sha }} \
-              npm run migration:run || {
-              echo "ERROR: Migrations failed."
-              exit 1
-            }
-
             echo "Starting services..."
             docker compose --env-file .env.vps up -d --remove-orphans
             docker compose --env-file .env.vps ps

@@ -38,42 +38,67 @@ DB_NAME=gkx_db
 
 El compose ya incluye `extra_hosts: host.docker.internal:host-gateway` para Linux.
 
-## 4. Primer despliegue manual
+## 4. Despliegue automático (CI/CD)
 
-```bash
-docker login ghcr.io
-
-docker compose --env-file .env.vps pull
-docker compose --profile migrations --env-file .env.vps run --rm migrations
-docker compose --env-file .env.vps up -d
-```
-
-El comando con `--profile migrations` ejecuta las migraciones de TypeORM antes de iniciar la API.
-
-## 4.1 Despliegues posteriores (automático)
-
-Una vez la base de datos esté lista en el primer deploy, los despliegues posteriores ejecutan migraciones automáticamente:
+El workflow de GitHub Actions ejecuta automáticamente:
 
 ```bash
 docker compose --env-file .env.vps pull
-docker compose --env-file .env.vps up -d
+docker compose --env-file .env.vps up -d --remove-orphans
 ```
 
-El servicio `migrations` se ejecuta automáticamente cada deploy y luego inicia el API.
+**Nota:** Las migraciones NO se ejecutan automáticamente. Debes hacerlas manualmente antes o después del deploy.
 
-## 4.2 Ejecutar migraciones manualmente (si es necesario)
+## 5. Ejecutar migraciones manualmente
+
+### Opción A: Con contenedor temporal (recomendado)
 
 ```bash
-docker compose --profile migrations --env-file .env.vps run --rm migrations
+cd /ruta/al/repo
+
+# Ejecutar migraciones en un contenedor temporal
+docker run --rm \
+  --env-file .env.vps \
+  --network host \
+  ghcr.io/pachix-dev/gkx-api:latest \
+  npm run migration:run
 ```
 
-O desde el contenedor del API ya corriendo:
+### Opción B: En el contenedor del API corriendo
 
 ```bash
 docker exec gkx-api npm run migration:run
 ```
 
-## 5. Verificacion
+### Opción C: Ver el estado de migraciones sin ejecutarlas
+
+```bash
+docker exec gkx-api npm run migration:show
+```
+
+## 6. Flujo recomendado
+
+1. **Primer deploy (con base de datos vacía):**
+
+```bash
+cd /ruta/al/repo
+docker compose --env-file .env.vps pull
+docker run --rm --env-file .env.vps --network host ghcr.io/pachix-dev/gkx-api:latest npm run migration:run
+docker compose --env-file .env.vps up -d
+```
+
+2. **Despliegues posteriores:**
+
+```bash
+cd /ruta/al/repo
+docker compose --env-file .env.vps pull
+docker compose --env-file .env.vps up -d --remove-orphans
+
+# Si hay cambios de schema pendientes, ejecuta migraciones:
+docker run --rm --env-file .env.vps --network host ghcr.io/pachix-dev/gkx-api:latest npm run migration:run
+```
+
+## 7. Verificacion
 
 ```bash
 docker ps
@@ -83,19 +108,14 @@ curl -I http://localhost:3021
 
 Si no tienes endpoint de health, valida un endpoint estable de la API.
 
-## 6. Ver logs de migraciones
-
-```bash
-docker logs gkx-migrations
-```
-
-O el API:
+## 8. Ver logs
 
 ```bash
 docker logs -f gkx-api
+docker logs -f gkx-web
 ```
 
-## 7. Update de version
+## 9. Update de version
 
 Si publicas imagenes por SHA, puedes desplegar una version puntual:
 
@@ -103,9 +123,7 @@ Si publicas imagenes por SHA, puedes desplegar una version puntual:
 IMAGE_TAG=<sha> docker compose --env-file .env.vps up -d
 ```
 
-Las migraciones se ejecutan automáticamente.
-
-## 8. Rollback rapido
+## 10. Rollback rapido
 
 ```bash
 IMAGE_TAG=<sha_anterior> docker compose --env-file .env.vps up -d
