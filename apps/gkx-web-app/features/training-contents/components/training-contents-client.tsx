@@ -216,7 +216,7 @@ export function TrainingContentsClient() {
 
           <form onSubmit={activeForm.handleSubmit(onSubmitForm)} className="grid gap-3 md:grid-cols-2">
             <label className="flex flex-col gap-1 md:col-span-2">
-              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Tenant ID</span>
+              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Organización ID</span>
               <input
                 {...activeForm.register("tenantId")}
                 disabled={Boolean(tenantId)}
