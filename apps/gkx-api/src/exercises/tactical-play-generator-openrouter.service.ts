@@ -29,9 +29,9 @@ const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL?.trim() || '';
 const OPENROUTER_FALLBACK_MODELS = (
   process.env.OPENROUTER_FALLBACK_MODELS ??
   [
-    'qwen/qwen2.5-7b-instruct:free',
-    'meta-llama/llama-3.2-3b-instruct:free',
-    'google/gemma-2-9b-it:free',
+    'google/gemma-4-26b-a4b-it:free',
+    'google/gemma-4-31b-it:free',
+    'nvidia/nemotron-3-super-120b-a12b:free',
   ].join(',')
 )
   .split(',')
