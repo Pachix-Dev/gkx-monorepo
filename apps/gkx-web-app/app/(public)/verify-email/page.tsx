@@ -71,14 +71,14 @@ function VerifyEmailPageContent() {
     <div className="grid min-h-screen bg-muted p-6 md:place-items-center">
       <div className="mx-auto w-full max-w-2xl rounded-2xl border border-border bg-card p-7 shadow-sm">
         <h1 className="text-2xl font-semibold text-card-foreground">Verificar email</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Confirma tu token o solicita un nuevo correo de verificacion.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Te hemos enviado un email confirma tu token o solicita un nuevo correo de verificacion.</p>
 
         <div className="mt-6 grid gap-5 md:grid-cols-2">
           <form className="space-y-3" onSubmit={confirmForm.handleSubmit(onConfirm)}>
             <h2 className="text-sm font-semibold text-foreground">Confirmar token</h2>
             <input
               {...confirmForm.register("token")}
-              placeholder="raw-email-verification-token"
+              placeholder="email-verification-token"
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
             />
             {confirmForm.formState.errors.token ? <p className="text-xs text-red-600">{confirmForm.formState.errors.token.message}</p> : null}
