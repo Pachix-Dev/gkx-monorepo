@@ -24,9 +24,19 @@ import {
 } from './tactical-asset-catalog';
 
 const OPENROUTER_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
-// Modelo gratuito recomendado para pruebas rápidas.
-const OPENROUTER_MODEL =
-  process.env.OPENROUTER_MODEL ?? 'qwen/qwen3.6-plus-preview:free';
+const OPENROUTER_MODELS_ENDPOINT = 'https://openrouter.ai/api/v1/models';
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL?.trim() || '';
+const OPENROUTER_FALLBACK_MODELS = (
+  process.env.OPENROUTER_FALLBACK_MODELS ??
+  [
+    'qwen/qwen2.5-7b-instruct:free',
+    'meta-llama/llama-3.2-3b-instruct:free',
+    'google/gemma-2-9b-it:free',
+  ].join(',')
+)
+  .split(',')
+  .map((m) => m.trim())
+  .filter(Boolean);
 
 type RawAIPlay = {
   backgroundId?: string | null;
@@ -36,6 +46,14 @@ type RawAIPlay = {
 };
 
 type RawElement = Record<string, unknown>;
+
+type OpenRouterModel = {
+  id?: string;
+  pricing?: {
+    prompt?: string;
+    completion?: string;
+  };
+};
 
 const VALID_PATTERNS = ['solid', 'dashed', 'dotted', 'discontinuous'] as const;
 const VALID_HEADS = ['none', 'triangle', 'circle', 'square', 'bar'] as const;
@@ -195,8 +213,6 @@ ESQUEMA EXACTO DE RESPUESTA:
     system: string,
     user: string,
   ): Promise<string> {
-    let response: Response;
-
     const referer = process.env.OPENROUTER_HTTP_REFERER?.trim();
     const title = process.env.OPENROUTER_TITLE?.trim();
 
@@ -208,48 +224,155 @@ ESQUEMA EXACTO DE RESPUESTA:
     if (referer) headers['HTTP-Referer'] = referer;
     if (title) headers['X-OpenRouter-Title'] = title;
 
-    try {
-      response = await fetch(OPENROUTER_ENDPOINT, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          model: OPENROUTER_MODEL,
-          temperature: 0.35,
-          max_tokens: 2048,
-          response_format: { type: 'json_object' },
-          messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: user },
-          ],
-        }),
-      });
-    } catch (error) {
-      this.logger.error('OpenRouter network error', error);
-      throw new InternalServerErrorException(
-        'No se pudo conectar con OpenRouter. Verifica la conexión.',
-      );
-    }
+    const modelsToTry = await this.resolveModelCandidates(apiKey);
+    let lastHttpError: { status: number; body: string } | null = null;
 
-    if (!response.ok) {
+    for (let i = 0; i < modelsToTry.length; i += 1) {
+      const model = modelsToTry[i];
+      const isLastModel = i === modelsToTry.length - 1;
+      let response: Response;
+
+      try {
+        response = await fetch(OPENROUTER_ENDPOINT, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model,
+            temperature: 0.35,
+            max_tokens: 2048,
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: system },
+              { role: 'user', content: user },
+            ],
+          }),
+        });
+      } catch (error) {
+        this.logger.error('OpenRouter network error', error);
+        throw new InternalServerErrorException(
+          'No se pudo conectar con OpenRouter. Verifica la conexión.',
+        );
+      }
+
+      if (response.ok) {
+        if (i > 0) {
+          this.logger.warn(
+            `OpenRouter fallback activado. Modelo exitoso: ${model}`,
+          );
+        }
+
+        const json = (await response.json()) as {
+          choices?: Array<{ message?: { content?: string } }>;
+        };
+
+        const content = json?.choices?.[0]?.message?.content;
+        if (!content) {
+          throw new InternalServerErrorException(
+            'OpenRouter no devolvió contenido. Intenta de nuevo.',
+          );
+        }
+
+        return content;
+      }
+
       const body = await response.text().catch(() => '');
+      lastHttpError = { status: response.status, body };
+
+      if (!isLastModel && this.shouldRetryWithFallback(response.status, body)) {
+        this.logger.warn(
+          `OpenRouter rechazó el modelo ${model} (${response.status}). Probando fallback...`,
+        );
+        continue;
+      }
+
       this.logger.error(`OpenRouter HTTP ${response.status}: ${body}`);
       throw new InternalServerErrorException(
         `OpenRouter devolvió un error (${response.status}). Intenta de nuevo.`,
       );
     }
 
-    const json = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-
-    const content = json?.choices?.[0]?.message?.content;
-    if (!content) {
-      throw new InternalServerErrorException(
-        'OpenRouter no devolvió contenido. Intenta de nuevo.',
+    if (lastHttpError) {
+      this.logger.error(
+        `OpenRouter HTTP ${lastHttpError.status}: ${lastHttpError.body}`,
       );
     }
 
-    return content;
+    throw new InternalServerErrorException(
+      'No se encontró un modelo gratuito disponible en OpenRouter. Intenta más tarde o configura OPENROUTER_MODEL.',
+    );
+  }
+
+  private async resolveModelCandidates(apiKey: string): Promise<string[]> {
+    const candidates: string[] = [];
+
+    if (OPENROUTER_MODEL) candidates.push(OPENROUTER_MODEL);
+    candidates.push(...OPENROUTER_FALLBACK_MODELS);
+
+    const discovered = await this.fetchAvailableFreeModels(apiKey);
+    candidates.push(...discovered);
+
+    const unique = Array.from(new Set(candidates));
+    if (unique.length > 0) return unique;
+
+    return ['qwen/qwen2.5-7b-instruct:free'];
+  }
+
+  private async fetchAvailableFreeModels(apiKey: string): Promise<string[]> {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${apiKey}`,
+    };
+
+    try {
+      const response = await fetch(OPENROUTER_MODELS_ENDPOINT, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) return [];
+
+      const payload = (await response.json()) as {
+        data?: OpenRouterModel[];
+      };
+
+      const freeModels = (payload.data ?? [])
+        .filter((m) => this.isFreeModel(m))
+        .map((m) => m.id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+
+      return freeModels;
+    } catch {
+      this.logger.warn(
+        'No se pudo obtener el listado de modelos de OpenRouter',
+      );
+      return [];
+    }
+  }
+
+  private isFreeModel(model: OpenRouterModel): boolean {
+    if (!model.id) return false;
+    if (model.id.endsWith(':free')) return true;
+
+    const prompt = Number(model.pricing?.prompt ?? '1');
+    const completion = Number(model.pricing?.completion ?? '1');
+    return (
+      Number.isFinite(prompt) &&
+      Number.isFinite(completion) &&
+      prompt === 0 &&
+      completion === 0
+    );
+  }
+
+  private shouldRetryWithFallback(status: number, body: string): boolean {
+    if (status === 404 || status === 408 || status === 429 || status >= 500) {
+      return true;
+    }
+
+    const normalized = body.toLowerCase();
+    return (
+      normalized.includes('no endpoints found') ||
+      (normalized.includes('model') && normalized.includes('not found')) ||
+      normalized.includes('is not available')
+    );
   }
 
   private parseAndNormalize(
