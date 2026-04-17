@@ -26,10 +26,12 @@ import {
 const GOOGLE_AISTUDIO_ENDPOINT =
   'https://generativelanguage.googleapis.com/v1beta/models';
 const GOOGLE_AISTUDIO_MODEL =
-  process.env.GOOGLE_AISTUDIO_MODEL?.trim() || 'gemini-2.0-flash';
+  process.env.GOOGLE_AISTUDIO_MODEL?.trim() || 'gemini-2.5-flash';
 const GOOGLE_AISTUDIO_FALLBACK_MODELS = (
   process.env.GOOGLE_AISTUDIO_FALLBACK_MODELS ??
-  ['gemini-2.0-flash-lite', 'gemini-1.5-flash'].join(',')
+  ['gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'].join(
+    ',',
+  )
 )
   .split(',')
   .map((m) => m.trim())
@@ -44,8 +46,16 @@ type RawAIPlay = {
 
 type RawElement = Record<string, unknown>;
 
+type CanvasBounds = {
+  xMin: number;
+  xMax: number;
+  yMin: number;
+  yMax: number;
+};
+
 type GoogleAiStudioGenerateResponse = {
   candidates?: Array<{
+    finishReason?: string;
     content?: {
       parts?: Array<{
         text?: string;
@@ -54,12 +64,16 @@ type GoogleAiStudioGenerateResponse = {
   }>;
 };
 
+const GOOGLE_AISTUDIO_MAX_OUTPUT_TOKENS_CANDIDATES = [2048, 4096, 8192];
+
 const VALID_PATTERNS = ['solid', 'dashed', 'dotted', 'discontinuous'] as const;
 const VALID_HEADS = ['none', 'triangle', 'circle', 'square', 'bar'] as const;
 
 @Injectable()
 export class TacticalPlayGeneratorAiStudioService {
-  private readonly logger = new Logger(TacticalPlayGeneratorAiStudioService.name);
+  private readonly logger = new Logger(
+    TacticalPlayGeneratorAiStudioService.name,
+  );
 
   constructor(
     @InjectRepository(ExerciseEntity)
@@ -101,7 +115,11 @@ export class TacticalPlayGeneratorAiStudioService {
       `Generating play (Google AI Studio) for exercise "${exercise.name}" (${exerciseId})`,
     );
 
-    const rawText = await this.callGoogleAiStudio(apiKey, systemPrompt, userPrompt);
+    const rawText = await this.callGoogleAiStudio(
+      apiKey,
+      systemPrompt,
+      userPrompt,
+    );
     return this.parseAndNormalize(rawText, dto.backgroundId);
   }
 
@@ -213,77 +231,120 @@ ESQUEMA EXACTO DE RESPUESTA:
     const modelsToTry = this.resolveModelCandidates();
     let lastHttpError: { status: number; body: string } | null = null;
 
-    for (let i = 0; i < modelsToTry.length; i += 1) {
+    modelLoop: for (let i = 0; i < modelsToTry.length; i += 1) {
       const model = modelsToTry[i];
       const isLastModel = i === modelsToTry.length - 1;
       const endpoint = `${GOOGLE_AISTUDIO_ENDPOINT}/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      let modelHadTruncation = false;
 
-      let response: Response;
-      try {
-        response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            systemInstruction: {
-              parts: [{ text: system }],
+      for (
+        let t = 0;
+        t < GOOGLE_AISTUDIO_MAX_OUTPUT_TOKENS_CANDIDATES.length;
+        t += 1
+      ) {
+        const maxOutputTokens = GOOGLE_AISTUDIO_MAX_OUTPUT_TOKENS_CANDIDATES[t];
+        const isLastTokenAttempt =
+          t === GOOGLE_AISTUDIO_MAX_OUTPUT_TOKENS_CANDIDATES.length - 1;
+
+        let response: Response;
+        try {
+          response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
             },
-            contents: [
-              {
-                role: 'user',
-                parts: [{ text: user }],
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [{ text: system }],
               },
-            ],
-            generationConfig: {
-              temperature: 0.35,
-              maxOutputTokens: 2048,
-              responseMimeType: 'application/json',
-            },
-          }),
-        });
-      } catch (error) {
-        this.logger.error('Google AI Studio network error', error);
+              contents: [
+                {
+                  role: 'user',
+                  parts: [{ text: user }],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.35,
+                maxOutputTokens,
+                responseMimeType: 'application/json',
+              },
+            }),
+          });
+        } catch (error) {
+          this.logger.error('Google AI Studio network error', error);
+          throw new InternalServerErrorException(
+            'No se pudo conectar con Google AI Studio. Verifica la conexion.',
+          );
+        }
+
+        if (response.ok) {
+          if (i > 0) {
+            this.logger.warn(
+              `Google AI Studio fallback activado. Modelo exitoso: ${model}`,
+            );
+          }
+
+          const payload =
+            (await response.json()) as GoogleAiStudioGenerateResponse;
+          const candidate = payload.candidates?.[0];
+          const content = candidate?.content?.parts?.find(
+            (part) =>
+              typeof part.text === 'string' && part.text.trim().length > 0,
+          )?.text;
+
+          if (!content) {
+            throw new InternalServerErrorException(
+              'Google AI Studio no devolvio contenido. Intenta de nuevo.',
+            );
+          }
+
+          if (
+            this.shouldRetryDueToTruncation(content, candidate?.finishReason)
+          ) {
+            modelHadTruncation = true;
+            if (!isLastTokenAttempt) {
+              this.logger.warn(
+                `Respuesta truncada con ${model} (maxOutputTokens=${maxOutputTokens}). Reintentando con mayor limite...`,
+              );
+              continue;
+            }
+            break;
+          }
+
+          return content;
+        }
+
+        const body = await response.text().catch(() => '');
+        lastHttpError = { status: response.status, body };
+
+        if (
+          this.shouldRetryWithFallback(response.status, body) &&
+          !isLastModel
+        ) {
+          this.logger.warn(
+            `Google AI Studio rechazo el modelo ${model} (${response.status}). Probando fallback...`,
+          );
+          continue modelLoop;
+        }
+
+        this.logger.error(`Google AI Studio HTTP ${response.status}: ${body}`);
         throw new InternalServerErrorException(
-          'No se pudo conectar con Google AI Studio. Verifica la conexion.',
+          `Google AI Studio devolvio un error (${response.status}). Intenta de nuevo.`,
         );
       }
 
-      if (response.ok) {
-        if (i > 0) {
-          this.logger.warn(
-            `Google AI Studio fallback activado. Modelo exitoso: ${model}`,
-          );
-        }
-
-        const payload = (await response.json()) as GoogleAiStudioGenerateResponse;
-        const content = payload.candidates?.[0]?.content?.parts?.find(
-          (part) => typeof part.text === 'string' && part.text.trim().length > 0,
-        )?.text;
-
-        if (!content) {
-          throw new InternalServerErrorException(
-            'Google AI Studio no devolvio contenido. Intenta de nuevo.',
-          );
-        }
-
-        return content;
-      }
-
-      const body = await response.text().catch(() => '');
-      lastHttpError = { status: response.status, body };
-
-      if (!isLastModel && this.shouldRetryWithFallback(response.status, body)) {
+      if (modelHadTruncation && !isLastModel) {
         this.logger.warn(
-          `Google AI Studio rechazo el modelo ${model} (${response.status}). Probando fallback...`,
+          `El modelo ${model} devolvio respuestas truncadas. Probando fallback...`,
         );
         continue;
       }
 
-      this.logger.error(`Google AI Studio HTTP ${response.status}: ${body}`);
-      throw new InternalServerErrorException(
-        `Google AI Studio devolvio un error (${response.status}). Intenta de nuevo.`,
-      );
+      if (modelHadTruncation && isLastModel) {
+        throw new InternalServerErrorException(
+          'La respuesta de Google AI Studio se truncó por longitud. Intenta con un prompt mas corto o reintenta.',
+        );
+      }
     }
 
     if (lastHttpError) {
@@ -298,12 +359,22 @@ ESQUEMA EXACTO DE RESPUESTA:
   }
 
   private resolveModelCandidates(): string[] {
+    const normalizeModelId = (model: string) =>
+      model
+        .trim()
+        .replace(/^models\//i, '')
+        .replace(/:generateContent$/i, '');
+
     const unique = Array.from(
-      new Set([GOOGLE_AISTUDIO_MODEL, ...GOOGLE_AISTUDIO_FALLBACK_MODELS]),
+      new Set(
+        [GOOGLE_AISTUDIO_MODEL, ...GOOGLE_AISTUDIO_FALLBACK_MODELS]
+          .map(normalizeModelId)
+          .filter(Boolean),
+      ),
     );
 
     if (unique.length > 0) return unique;
-    return ['gemini-2.0-flash'];
+    return ['gemini-2.5-flash'];
   }
 
   private shouldRetryWithFallback(status: number, body: string): boolean {
@@ -313,12 +384,32 @@ ESQUEMA EXACTO DE RESPUESTA:
 
     const normalized = body.toLowerCase();
     return (
-      normalized.includes('model') &&
+      (normalized.includes('model') &&
         (normalized.includes('not found') ||
           normalized.includes('not supported') ||
-          normalized.includes('is not available')) ||
+          normalized.includes('is not available'))) ||
       normalized.includes('quota exceeded')
     );
+  }
+
+  private shouldRetryDueToTruncation(
+    content: string,
+    finishReason?: string,
+  ): boolean {
+    if (typeof finishReason === 'string') {
+      const normalizedFinishReason = finishReason.toUpperCase();
+      if (
+        normalizedFinishReason.includes('MAX_TOKENS') ||
+        normalizedFinishReason.includes('LENGTH')
+      ) {
+        return true;
+      }
+    }
+
+    const trimmed = content.trim();
+    if (!trimmed.startsWith('{')) return false;
+
+    return this.extractFirstJsonObject(trimmed) === null;
   }
 
   private parseAndNormalize(
@@ -327,15 +418,7 @@ ESQUEMA EXACTO DE RESPUESTA:
   ): GeneratePlayResponseDto {
     const warnings: string[] = [];
 
-    let parsed: RawAIPlay;
-    const rawJson = this.unwrapMarkdownJson(rawText);
-    try {
-      parsed = JSON.parse(rawJson) as RawAIPlay;
-    } catch {
-      throw new InternalServerErrorException(
-        'La IA devolvio JSON malformado. Intenta de nuevo.',
-      );
-    }
+    const parsed = this.parseRawAiPlay(rawText);
 
     if (Array.isArray(parsed.warnings)) {
       warnings.push(
@@ -361,7 +444,12 @@ ESQUEMA EXACTO DE RESPUESTA:
       if (el) elements.push(el);
     }
 
-    if (elements.length === 0) {
+    const adjustedElements = this.fitElementsToBackground(
+      elements,
+      resolvedBg?.backgroundId ?? null,
+    );
+
+    if (adjustedElements.length === 0) {
       warnings.push(
         'La IA no genero elementos validos. Intenta con un prompt mas especifico.',
       );
@@ -375,7 +463,7 @@ ESQUEMA EXACTO DE RESPUESTA:
     return {
       backgroundId: resolvedBg?.backgroundId ?? null,
       backgroundSrc: resolvedBg?.src ?? null,
-      elements,
+      elements: adjustedElements,
       summary,
       warnings,
     };
@@ -389,6 +477,368 @@ ESQUEMA EXACTO DE RESPUESTA:
       .replace(/^```(?:json)?\s*/i, '')
       .replace(/\s*```$/, '')
       .trim();
+  }
+
+  private parseRawAiPlay(rawText: string): RawAIPlay {
+    const normalized = this.unwrapMarkdownJson(rawText);
+    const direct = this.tryParseJson(normalized);
+    if (direct) return direct;
+
+    const extracted = this.extractFirstJsonObject(normalized);
+    if (extracted) {
+      const extractedParsed = this.tryParseJson(extracted);
+      if (extractedParsed) return extractedParsed;
+
+      const repairedExtracted = this.removeTrailingCommas(extracted);
+      const repairedExtractedParsed = this.tryParseJson(repairedExtracted);
+      if (repairedExtractedParsed) return repairedExtractedParsed;
+    }
+
+    const repairedNormalized = this.removeTrailingCommas(normalized);
+    const repairedNormalizedParsed = this.tryParseJson(repairedNormalized);
+    if (repairedNormalizedParsed) return repairedNormalizedParsed;
+
+    this.logger.warn(
+      `Google AI Studio devolvio contenido no parseable (preview): ${normalized.slice(0, 300)}`,
+    );
+    throw new InternalServerErrorException(
+      'La IA devolvio JSON malformado. Intenta de nuevo.',
+    );
+  }
+
+  private tryParseJson(value: string): RawAIPlay | null {
+    try {
+      return JSON.parse(value) as RawAIPlay;
+    } catch {
+      return null;
+    }
+  }
+
+  private removeTrailingCommas(value: string): string {
+    return value.replace(/,\s*([}\]])/g, '$1');
+  }
+
+  private extractFirstJsonObject(value: string): string | null {
+    const start = value.indexOf('{');
+    if (start === -1) return null;
+
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+
+    for (let i = start; i < value.length; i += 1) {
+      const char = value[i];
+
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+          continue;
+        }
+
+        if (char === '\\') {
+          escaped = true;
+          continue;
+        }
+
+        if (char === '"') {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (char === '"') {
+        inString = true;
+        continue;
+      }
+
+      if (char === '{') {
+        depth += 1;
+        continue;
+      }
+
+      if (char === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          return value.slice(start, i + 1);
+        }
+      }
+    }
+
+    return null;
+  }
+
+  private fitElementsToBackground(
+    elements: Record<string, unknown>[],
+    backgroundId: string | null,
+  ): Record<string, unknown>[] {
+    if (elements.length <= 1) return elements;
+
+    const sourceBounds = this.getElementsBounds(elements);
+    if (!sourceBounds) return elements;
+
+    const targetBounds = this.getTargetBoundsForBackground(backgroundId);
+    const sourceWidth = sourceBounds.xMax - sourceBounds.xMin;
+    const sourceHeight = sourceBounds.yMax - sourceBounds.yMin;
+    const targetWidth = targetBounds.xMax - targetBounds.xMin;
+    const targetHeight = targetBounds.yMax - targetBounds.yMin;
+
+    if (sourceWidth <= 0 || sourceHeight <= 0) return elements;
+
+    const desiredOccupancy = 0.76;
+    const scaleX = (targetWidth * desiredOccupancy) / sourceWidth;
+    const scaleY = (targetHeight * desiredOccupancy) / sourceHeight;
+    const scale = this.clampNumber(Math.min(scaleX, scaleY), 0.7, 1.4);
+
+    const sourceCx = (sourceBounds.xMin + sourceBounds.xMax) / 2;
+    const sourceCy = (sourceBounds.yMin + sourceBounds.yMax) / 2;
+    const targetCx = (targetBounds.xMin + targetBounds.xMax) / 2;
+    const targetCy = (targetBounds.yMin + targetBounds.yMax) / 2;
+
+    return elements.map((element) =>
+      this.transformElementToBounds(
+        element,
+        scale,
+        sourceCx,
+        sourceCy,
+        targetCx,
+        targetCy,
+        targetBounds,
+      ),
+    );
+  }
+
+  private getTargetBoundsForBackground(
+    backgroundId: string | null,
+  ): CanvasBounds {
+    const fullBounds: CanvasBounds = {
+      xMin: CANVAS_MARGIN,
+      xMax: CANVAS_WIDTH - CANVAS_MARGIN,
+      yMin: CANVAS_MARGIN,
+      yMax: CANVAS_HEIGHT - CANVAS_MARGIN,
+    };
+
+    if (!backgroundId) return fullBounds;
+
+    if (backgroundId.startsWith('frontal-')) {
+      return {
+        xMin: CANVAS_WIDTH * 0.18,
+        xMax: CANVAS_WIDTH * 0.86,
+        yMin: CANVAS_HEIGHT * 0.42,
+        yMax: CANVAS_HEIGHT * 0.92,
+      };
+    }
+
+    if (backgroundId.startsWith('lateral-area-')) {
+      return {
+        xMin: CANVAS_WIDTH * 0.1,
+        xMax: CANVAS_WIDTH * 0.92,
+        yMin: CANVAS_HEIGHT * 0.28,
+        yMax: CANVAS_HEIGHT * 0.92,
+      };
+    }
+
+    if (backgroundId.startsWith('trasera-area-')) {
+      return {
+        xMin: CANVAS_WIDTH * 0.12,
+        xMax: CANVAS_WIDTH * 0.9,
+        yMin: CANVAS_HEIGHT * 0.26,
+        yMax: CANVAS_HEIGHT * 0.86,
+      };
+    }
+
+    if (backgroundId.startsWith('medio-campo-')) {
+      return {
+        xMin: CANVAS_WIDTH * 0.08,
+        xMax: CANVAS_WIDTH * 0.92,
+        yMin: CANVAS_HEIGHT * 0.24,
+        yMax: CANVAS_HEIGHT * 0.9,
+      };
+    }
+
+    if (backgroundId.startsWith('corner-')) {
+      return {
+        xMin: CANVAS_WIDTH * 0.08,
+        xMax: CANVAS_WIDTH * 0.92,
+        yMin: CANVAS_HEIGHT * 0.34,
+        yMax: CANVAS_HEIGHT * 0.95,
+      };
+    }
+
+    if (backgroundId.startsWith('zona-neutra-')) {
+      return {
+        xMin: CANVAS_WIDTH * 0.08,
+        xMax: CANVAS_WIDTH * 0.92,
+        yMin: CANVAS_HEIGHT * 0.18,
+        yMax: CANVAS_HEIGHT * 0.9,
+      };
+    }
+
+    return fullBounds;
+  }
+
+  private getElementsBounds(
+    elements: Record<string, unknown>[],
+  ): CanvasBounds | null {
+    let xMin = Number.POSITIVE_INFINITY;
+    let xMax = Number.NEGATIVE_INFINITY;
+    let yMin = Number.POSITIVE_INFINITY;
+    let yMax = Number.NEGATIVE_INFINITY;
+
+    for (const element of elements) {
+      const bounds = this.getElementBounds(element);
+      if (!bounds) continue;
+      xMin = Math.min(xMin, bounds.xMin);
+      xMax = Math.max(xMax, bounds.xMax);
+      yMin = Math.min(yMin, bounds.yMin);
+      yMax = Math.max(yMax, bounds.yMax);
+    }
+
+    if (
+      !isFinite(xMin) ||
+      !isFinite(xMax) ||
+      !isFinite(yMin) ||
+      !isFinite(yMax)
+    ) {
+      return null;
+    }
+
+    return { xMin, xMax, yMin, yMax };
+  }
+
+  private getElementBounds(
+    element: Record<string, unknown>,
+  ): CanvasBounds | null {
+    const kind = typeof element.kind === 'string' ? element.kind : '';
+
+    if (kind === 'arrow' || kind === 'line') {
+      const points = Array.isArray(element.points)
+        ? element.points.filter((v): v is number => typeof v === 'number')
+        : [];
+      if (points.length < 4 || points.length % 2 !== 0) return null;
+
+      let xMin = Number.POSITIVE_INFINITY;
+      let xMax = Number.NEGATIVE_INFINITY;
+      let yMin = Number.POSITIVE_INFINITY;
+      let yMax = Number.NEGATIVE_INFINITY;
+
+      for (let i = 0; i < points.length; i += 2) {
+        const x = points[i];
+        const y = points[i + 1];
+        xMin = Math.min(xMin, x);
+        xMax = Math.max(xMax, x);
+        yMin = Math.min(yMin, y);
+        yMax = Math.max(yMax, y);
+      }
+
+      return { xMin, xMax, yMin, yMax };
+    }
+
+    const x = typeof element.x === 'number' ? element.x : null;
+    const y = typeof element.y === 'number' ? element.y : null;
+    if (x === null || y === null) return null;
+
+    const width =
+      typeof element.width === 'number' && isFinite(element.width)
+        ? Math.max(1, element.width)
+        : 1;
+    const height =
+      typeof element.height === 'number' && isFinite(element.height)
+        ? Math.max(1, element.height)
+        : 1;
+
+    return {
+      xMin: x,
+      xMax: x + width,
+      yMin: y,
+      yMax: y + height,
+    };
+  }
+
+  private transformElementToBounds(
+    element: Record<string, unknown>,
+    scale: number,
+    sourceCx: number,
+    sourceCy: number,
+    targetCx: number,
+    targetCy: number,
+    targetBounds: CanvasBounds,
+  ): Record<string, unknown> {
+    const transformed: Record<string, unknown> = { ...element };
+    const kind = typeof transformed.kind === 'string' ? transformed.kind : '';
+
+    const transformPoint = (x: number, y: number) => ({
+      x: (x - sourceCx) * scale + targetCx,
+      y: (y - sourceCy) * scale + targetCy,
+    });
+
+    if (kind === 'arrow' || kind === 'line') {
+      const points = Array.isArray(transformed.points)
+        ? transformed.points.filter((v): v is number => typeof v === 'number')
+        : [];
+      const mapped: number[] = [];
+      for (let i = 0; i < points.length; i += 2) {
+        const next = transformPoint(points[i], points[i + 1]);
+        mapped.push(
+          this.clampNumber(next.x, targetBounds.xMin, targetBounds.xMax),
+          this.clampNumber(next.y, targetBounds.yMin, targetBounds.yMax),
+        );
+      }
+      transformed.points = mapped;
+      return transformed;
+    }
+
+    const x = typeof transformed.x === 'number' ? transformed.x : null;
+    const y = typeof transformed.y === 'number' ? transformed.y : null;
+    if (x === null || y === null) return transformed;
+
+    const transformedPoint = transformPoint(x, y);
+    const width =
+      typeof transformed.width === 'number' && isFinite(transformed.width)
+        ? transformed.width
+        : 0;
+    const height =
+      typeof transformed.height === 'number' && isFinite(transformed.height)
+        ? transformed.height
+        : 0;
+
+    if (kind === 'rect') {
+      transformed.width = this.clampNumber(
+        width * scale,
+        40,
+        CANVAS_WIDTH * 0.8,
+      );
+      transformed.height = this.clampNumber(
+        height * scale,
+        40,
+        CANVAS_HEIGHT * 0.7,
+      );
+    }
+
+    const finalWidth =
+      typeof transformed.width === 'number' && isFinite(transformed.width)
+        ? transformed.width
+        : 0;
+    const finalHeight =
+      typeof transformed.height === 'number' && isFinite(transformed.height)
+        ? transformed.height
+        : 0;
+
+    transformed.x = this.clampNumber(
+      transformedPoint.x,
+      targetBounds.xMin,
+      targetBounds.xMax - finalWidth,
+    );
+    transformed.y = this.clampNumber(
+      transformedPoint.y,
+      targetBounds.yMin,
+      targetBounds.yMax - finalHeight,
+    );
+
+    return transformed;
+  }
+
+  private clampNumber(value: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, value));
   }
 
   private normalizeElement(
