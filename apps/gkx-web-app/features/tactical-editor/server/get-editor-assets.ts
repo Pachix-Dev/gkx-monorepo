@@ -17,6 +17,23 @@ const IMAGE_PATTERN = /\.(png|jpe?g|webp|svg)$/i;
 const BACKGROUND_DIR = path.join(process.cwd(), "public", "editor-assets", "backgrounds");
 const SHAPES_DIR = path.join(process.cwd(), "public", "editor-assets", "shapes");
 
+async function readDirSafe(dirPath: string) {
+  try {
+    return await fs.readdir(dirPath, { withFileTypes: true });
+  } catch (error) {
+    const code =
+      typeof error === "object" && error !== null && "code" in error
+        ? String((error as { code?: unknown }).code)
+        : "";
+
+    if (code === "ENOENT") {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   aros: "Aros",
   balones: "Balones",
@@ -61,7 +78,7 @@ function buildPublicSrc(...segments: string[]) {
 }
 
 async function readImages(dirPath: string, publicSegments: string[]): Promise<EditorBackground[]> {
-  const entries = await fs.readdir(dirPath, { withFileTypes: true });
+  const entries = await readDirSafe(dirPath);
 
   return entries
     .filter((entry) => entry.isFile() && IMAGE_PATTERN.test(entry.name))
@@ -78,7 +95,7 @@ export async function getEditorBackgrounds(): Promise<EditorBackground[]> {
 }
 
 export async function getEditorShapeGroups(): Promise<EditorShapeGroup[]> {
-  const categories = await fs.readdir(SHAPES_DIR, { withFileTypes: true });
+  const categories = await readDirSafe(SHAPES_DIR);
 
   const groups = await Promise.all(
     categories
