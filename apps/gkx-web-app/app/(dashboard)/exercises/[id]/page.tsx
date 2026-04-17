@@ -11,18 +11,27 @@ const API_BASE_URL = process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API
 async function fetchAuthed<T>(path: string, token: string | undefined): Promise<T | null> {
   if (!API_BASE_URL || !token) return null;
 
-  const response = await fetch(`${API_BASE_URL}/api${path}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api${path}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+  } catch {
+    return null;
+  }
 
   if (!response.ok) return null;
 
-  return response.json() as Promise<T>;
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
 }
 
 async function fetchAuthedArray(path: string, token: string | undefined) {
