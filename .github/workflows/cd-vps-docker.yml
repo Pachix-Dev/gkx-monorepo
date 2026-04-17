@@ -89,3 +89,13 @@ jobs:
             fi
 
             docker image prune -f
+
+            echo "Cleaning old images..."
+            for repo in "ghcr.io/${GHCR_OWNER}/gkx-api" "ghcr.io/${GHCR_OWNER}/gkx-web-app"; do
+              docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" "$repo" \
+              | awk '$1 !~ /:latest$/ && $1 !~ /:'"$IMAGE_TAG"'$/ {print $2}' \
+              | sort -u \
+              | xargs -r docker rmi -f || true
+            done
+
+            docker image prune -f

@@ -1,38 +1,16 @@
 import { TrainingSessionDetailClient } from "@/features/training-sessions/components/training-session-detail-client";
-import { extractArray, extractData } from "@/lib/api/response";
+import { extractData } from "@/lib/api/response";
+import {
+  fetchServerApiArray,
+  fetchServerApiJson,
+  isServerApiNotFound,
+  isServerApiUnauthorized,
+} from "@/lib/api/server-fetch";
 import { queryKeys } from "@/lib/query/keys";
 import { createQueryClient } from "@/lib/query/query-client";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
-
-const API_BASE_URL = process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL;
-
-async function fetchAuthed(path: string, token: string | undefined) {
-  if (!API_BASE_URL || !token) return null;
-
-  let res: Response;
-  try {
-    res = await fetch(`${API_BASE_URL}/api${path}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      cache: "no-store",
-    });
-  } catch {
-    return null;
-  }
-
-  if (!res.ok) return null;
-
-  try {
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
+import { notFound, redirect } from "next/navigation";
 
 // async-parallel: independents fetched in parallel via Promise.all (vercel-react-best-practices)
 export default async function TrainingSessionDetailPage({
@@ -44,41 +22,52 @@ export default async function TrainingSessionDetailPage({
   const queryClient = createQueryClient();
   const token = (await cookies()).get("gkx_access_token")?.value;
 
-  const [sessionPayload] = await Promise.all([
-    fetchAuthed(`/training-sessions/${id}`, token),
-    queryClient.prefetchQuery({
-      queryKey: queryKeys.trainingSession(id),
-      queryFn: () => fetchAuthed(`/training-sessions/${id}`, token).then((p) => (p ? extractData(p) : null)),
-    }),
+  const [sessionResult] = await Promise.all([
+    fetchServerApiJson<unknown>(`/training-sessions/${id}`, token),
     queryClient.prefetchQuery({
       queryKey: queryKeys.sessionContents(id),
-      queryFn: () => fetchAuthed(`/training-sessions/${id}/contents`, token).then((p) => (p ? extractArray(p) : [])),
+      queryFn: () => fetchServerApiArray(`/training-sessions/${id}/contents`, token),
     }),
     queryClient.prefetchQuery({
       queryKey: queryKeys.sessionExercises(id),
-      queryFn: () => fetchAuthed(`/training-sessions/${id}/exercises`, token).then((p) => (p ? extractArray(p) : [])),
+      queryFn: () => fetchServerApiArray(`/training-sessions/${id}/exercises`, token),
     }),
     queryClient.prefetchQuery({
       queryKey: queryKeys.attendanceBySession(id),
-      queryFn: () => fetchAuthed(`/attendance/session/${id}`, token).then((p) => (p ? extractArray(p) : [])),
+      queryFn: () => fetchServerApiArray(`/attendance/session/${id}`, token),
     }),
     queryClient.prefetchQuery({
       queryKey: queryKeys.evaluationsBySession(id),
-      queryFn: () => fetchAuthed(`/evaluations/session/${id}`, token).then((p) => (p ? extractArray(p) : [])),
+      queryFn: () => fetchServerApiArray(`/evaluations/session/${id}`, token),
     }),
     queryClient.prefetchQuery({
       queryKey: queryKeys.trainingContents({}),
-      queryFn: () => fetchAuthed("/training-contents", token).then((p) => (p ? extractArray(p) : [])),
+      queryFn: () => fetchServerApiArray("/training-contents", token),
     }),
     queryClient.prefetchQuery({
       queryKey: queryKeys.exercises({}),
-      queryFn: () => fetchAuthed("/exercises", token).then((p) => (p ? extractArray(p) : [])),
+      queryFn: () => fetchServerApiArray("/exercises", token),
     }),
   ]);
 
-  if (!sessionPayload) {
+  if (isServerApiNotFound(sessionResult)) {
     notFound();
   }
+
+  if (isServerApiUnauthorized(sessionResult)) {
+    redirect(`/login?next=/training-sessions/${id}`);
+  }
+
+  if (!sessionResult.ok) {
+    throw new Error("No se pudo cargar la sesion de entrenamiento.");
+  }
+
+  const session = extractData<unknown>(sessionResult.data);
+  if (!session) {
+    notFound();
+  }
+
+  queryClient.setQueryData(queryKeys.trainingSession(id), session);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

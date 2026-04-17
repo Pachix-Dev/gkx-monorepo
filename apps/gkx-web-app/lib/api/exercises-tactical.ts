@@ -72,7 +72,7 @@ export async function generateTacticalPlay(
   input: GeneratePlayInput,
 ): Promise<GeneratePlayResponse> {
   const payload = await apiRequest<unknown>(
-    `/exercises/${exerciseId}/tactical/generate-openrouter`,
+    `/exercises/${exerciseId}/tactical/generate-aistudio`,
     {
       method: "POST",
       auth: true,

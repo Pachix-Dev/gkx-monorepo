@@ -16,6 +16,7 @@ import {
   updateGoalkeeperSchema,
   UpdateGoalkeeperFormValues,
 } from "@/features/goalkeepers/schemas/goalkeeper-form";
+import Image from "next/image";
 import { useRef, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { sileo } from "sileo";
@@ -396,9 +397,12 @@ export function GoalkeepersClient() {
               <div className="md:col-span-2 flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-4">
                 <span className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Avatar</span>
                 {goalkeepers.find((g) => g.id === avatarUploadId)?.avatarUrl ? (
-                  <img
+                  <Image
                     src={`${process.env.NEXT_PUBLIC_API_URL}${goalkeepers.find((g) => g.id === avatarUploadId)?.avatarUrl}`}
                     alt="Avatar"
+                    width={80}
+                    height={80}
+                    unoptimized
                     className="h-20 w-20 rounded-full object-cover border border-border"
                   />
                 ) : (
@@ -448,9 +452,12 @@ export function GoalkeepersClient() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {item.avatarUrl ? (
-                            <img
+                            <Image
                               src={`${process.env.NEXT_PUBLIC_API_URL}${item.avatarUrl}`}
                               alt={item.name ?? "Avatar"}
+                              width={32}
+                              height={32}
+                              unoptimized
                               className="h-8 w-8 rounded-full object-cover border border-border shrink-0"
                             />
                           ) : (

@@ -1,11 +1,10 @@
 import { DashboardClient } from "@/features/dashboard/components/dashboard-client";
 import { extractArray } from "@/lib/api/response";
+import { fetchServerApiJson } from "@/lib/api/server-fetch";
 import { queryKeys } from "@/lib/query/keys";
 import { createQueryClient } from "@/lib/query/query-client";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { cookies } from "next/headers";
-
-const API_BASE_URL = process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL;
 
 type SessionEntity = {
   date?: string;
@@ -37,48 +36,18 @@ function isDateInCurrentWeek(raw?: string) {
   return date >= weekStart && date < weekEnd;
 }
 
-async function fetchAuthed(path: string, token: string | undefined) {
-  if (!API_BASE_URL || !token) {
-    return null;
-  }
-
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}/api${path}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      cache: "no-store",
-    });
-  } catch {
-    return null;
-  }
-
-  if (!response.ok) {
-    return null;
-  }
-
-  try {
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
-
 async function getServerDashboardKpis(token: string | undefined) {
-  const [goalkeepersPayload, teamsPayload, sessionsPayload, evaluationsPayload] = await Promise.all([
-    fetchAuthed("/goalkeepers", token),
-    fetchAuthed("/teams", token),
-    fetchAuthed("/training-sessions", token),
-    fetchAuthed("/evaluations", token),
+  const [goalkeepersResult, teamsResult, sessionsResult, evaluationsResult] = await Promise.all([
+    fetchServerApiJson<unknown>("/goalkeepers", token),
+    fetchServerApiJson<unknown>("/teams", token),
+    fetchServerApiJson<unknown>("/training-sessions", token),
+    fetchServerApiJson<unknown>("/evaluations", token),
   ]);
 
-  const goalkeepers = extractArray<unknown>(goalkeepersPayload);
-  const teams = extractArray<unknown>(teamsPayload);
-  const sessions = extractArray<SessionEntity>(sessionsPayload);
-  const evaluations = extractArray<EvaluationEntity>(evaluationsPayload);
+  const goalkeepers = extractArray<unknown>(goalkeepersResult.ok ? goalkeepersResult.data : null);
+  const teams = extractArray<unknown>(teamsResult.ok ? teamsResult.data : null);
+  const sessions = extractArray<SessionEntity>(sessionsResult.ok ? sessionsResult.data : null);
+  const evaluations = extractArray<EvaluationEntity>(evaluationsResult.ok ? evaluationsResult.data : null);
   const teamsWithResponsible = teams.filter(
     (item) =>
       typeof item === "object" &&
@@ -113,7 +82,8 @@ async function getServerDashboardKpis(token: string | undefined) {
 }
 
 async function getServerSystemHealth(token: string | undefined) {
-  const payload = await fetchAuthed("/health", token);
+  const result = await fetchServerApiJson<unknown>("/health", token);
+  const payload = result.ok ? result.data : null;
 
   if (payload && typeof payload === "object") {
     const source = payload as Record<string, unknown>;
