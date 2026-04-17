@@ -13,21 +13,30 @@ async function fetchAuthedArray(path: string, token: string | undefined) {
     return [];
   }
 
-  const response = await fetch(`${API_BASE_URL}/api${path}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api${path}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+  } catch {
+    return [];
+  }
 
   if (!response.ok) {
     return [];
   }
 
-  const payload = await response.json();
-  return extractArray(payload);
+  try {
+    const payload = await response.json();
+    return extractArray(payload);
+  } catch {
+    return [];
+  }
 }
 
 export default async function TeamsPage() {

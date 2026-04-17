@@ -57,21 +57,30 @@ export async function getServerAuthUser(): Promise<ServerAuthUser | null> {
     return null;
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+  } catch {
+    return null;
+  }
 
   if (!response.ok) {
     return null;
   }
 
-  const payload = (await response.json()) as unknown;
-  return extractUser(payload);
+  try {
+    const payload = (await response.json()) as unknown;
+    return extractUser(payload);
+  } catch {
+    return null;
+  }
 }
 
 export async function requireServerRole(

@@ -42,20 +42,29 @@ async function fetchAuthed(path: string, token: string | undefined) {
     return null;
   }
 
-  const response = await fetch(`${API_BASE_URL}/api${path}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api${path}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+  } catch {
+    return null;
+  }
 
   if (!response.ok) {
     return null;
   }
 
-  return response.json();
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
 }
 
 async function getServerDashboardKpis(token: string | undefined) {

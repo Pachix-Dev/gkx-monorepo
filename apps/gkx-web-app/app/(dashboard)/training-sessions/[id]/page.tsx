@@ -11,17 +11,27 @@ const API_BASE_URL = process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API
 async function fetchAuthed(path: string, token: string | undefined) {
   if (!API_BASE_URL || !token) return null;
 
-  const res = await fetch(`${API_BASE_URL}/api${path}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/api${path}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+  } catch {
+    return null;
+  }
 
   if (!res.ok) return null;
-  return res.json();
+
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
 
 // async-parallel: independents fetched in parallel via Promise.all (vercel-react-best-practices)

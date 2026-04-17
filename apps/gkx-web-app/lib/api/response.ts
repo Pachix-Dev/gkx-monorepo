@@ -3,6 +3,10 @@ type ApiEnvelope<T> = {
 };
 
 export function extractData<T>(payload: unknown): T {
+  if (payload == null || typeof payload !== "object") {
+    return payload as T;
+  }
+
   const source = payload as ApiEnvelope<T> & T;
   return (source.data ?? source) as T;
 }
