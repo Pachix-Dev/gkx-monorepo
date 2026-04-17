@@ -7,6 +7,7 @@ import { ExerciseEntity } from './exercise.entity';
 import { ExercisesController } from './exercises.controller';
 import { ExercisesNestedController } from './exercises-nested.controller';
 import { ExercisesTacticalController } from './exercises-tactical.controller';
+import { TacticalPlayGeneratorAiStudioService } from './tactical-play-generator-aistudio.service';
 import { ExercisesService } from './exercises.service';
 import { TacticalPlayGeneratorOpenRouterService } from './tactical-play-generator-openrouter.service';
 import { TacticalPlayGeneratorService } from './tactical-play-generator.service';
@@ -28,6 +29,7 @@ import { TacticalPlayGeneratorService } from './tactical-play-generator.service'
     ExercisesService,
     TacticalPreviewStorageService,
     TacticalPlayGeneratorService,
+    TacticalPlayGeneratorAiStudioService,
     TacticalPlayGeneratorOpenRouterService,
   ],
   exports: [ExercisesService, TypeOrmModule],

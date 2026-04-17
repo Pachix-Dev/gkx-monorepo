@@ -37,6 +37,7 @@ import { GeneratePlayResponseDto } from './dto/generate-play-response.dto';
 import { TacticalDesignResponseDto } from './dto/tactical-design-response.dto';
 import { UpdateTacticalDesignDto } from './dto/update-tactical-design.dto';
 import { ExercisesService } from './exercises.service';
+import { TacticalPlayGeneratorAiStudioService } from './tactical-play-generator-aistudio.service';
 import { TacticalPlayGeneratorOpenRouterService } from './tactical-play-generator-openrouter.service';
 import { TacticalPlayGeneratorService } from './tactical-play-generator.service';
 
@@ -53,6 +54,7 @@ export class ExercisesTacticalController {
   constructor(
     private readonly exercisesService: ExercisesService,
     private readonly tacticalPlayGenerator: TacticalPlayGeneratorService,
+    private readonly tacticalPlayGeneratorAiStudio: TacticalPlayGeneratorAiStudioService,
     private readonly tacticalPlayGeneratorOpenRouter: TacticalPlayGeneratorOpenRouterService,
   ) {}
 
@@ -131,6 +133,37 @@ export class ExercisesTacticalController {
     return {
       success: true,
       message: 'Play generated successfully (OpenRouter)',
+      data,
+    };
+  }
+
+  @Post(':id/tactical/generate-aistudio')
+  @Roles(Role.SUPER_ADMIN, Role.USER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Generar jugada táctica con IA (Google AI Studio)',
+    description:
+      'Ruta paralela de pruebas con Google AI Studio free tier. Requiere GOOGLE_AISTUDIO_API_KEY configurado en el servidor.',
+  })
+  @ApiUuidParam('id', 'Identificador del ejercicio')
+  @ApiTypedSuccessResponse({
+    message: 'Play generated successfully (Google AI Studio)',
+    model: GeneratePlayResponseDto,
+  })
+  @ApiCommonErrorResponses()
+  async generatePlayAiStudio(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: GeneratePlayDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.tacticalPlayGeneratorAiStudio.generatePlay(
+      id,
+      dto,
+      user,
+    );
+    return {
+      success: true,
+      message: 'Play generated successfully (Google AI Studio)',
       data,
     };
   }
