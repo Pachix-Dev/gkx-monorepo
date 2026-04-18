@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  InternalServerErrorException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -319,8 +320,7 @@ export class SubscriptionsService {
     }
 
     const stripe = await this.getStripeClient();
-    const billingBaseUrl =
-      process.env.BILLING_BASE_URL?.trim() ?? 'http://localhost:3001';
+    const billingBaseUrl = this.getBillingBaseUrl();
 
     const session = await stripe.billingPortal.sessions.create({
       customer: subscription.stripeCustomerId,
@@ -720,8 +720,7 @@ export class SubscriptionsService {
     request: PlanChangeRequestEntity,
     priceId: string,
   ) {
-    const billingBaseUrl =
-      process.env.BILLING_BASE_URL?.trim() ?? 'http://localhost:3001';
+    const billingBaseUrl = this.getBillingBaseUrl();
 
     const stripe = await this.getStripeClient();
 
@@ -1205,5 +1204,18 @@ export class SubscriptionsService {
       return Number.isNaN(parsed) ? null : parsed;
     }
     return null;
+  }
+
+  private getBillingBaseUrl() {
+    const billingBaseUrl = process.env.BILLING_BASE_URL?.trim();
+    if (!billingBaseUrl) {
+      throw new InternalServerErrorException(
+        'Missing BILLING_BASE_URL environment variable',
+      );
+    }
+
+    return billingBaseUrl.endsWith('/')
+      ? billingBaseUrl.slice(0, -1)
+      : billingBaseUrl;
   }
 }
