@@ -383,16 +383,6 @@ export function GoalkeepersClient() {
               />
             </label>
 
-            <div className="md:col-span-2">
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-secondary hover:text-secondary-foreground disabled:opacity-60"
-              >
-                {isSaving ? "Guardando..." : formMode === "create" ? "Crear portero" : "Guardar cambios"}
-              </button>
-            </div>
-
             {formMode === "edit" && avatarUploadId ? (
               <div className="md:col-span-2 flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-4">
                 <span className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Avatar</span>
@@ -423,6 +413,16 @@ export function GoalkeepersClient() {
                 ) : null}
               </div>
             ) : null}
+
+            <div className="md:col-span-2">
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-secondary hover:text-secondary-foreground disabled:opacity-60"
+              >
+                {isSaving ? "Guardando..." : formMode === "create" ? "Crear portero" : "Guardar cambios"}
+              </button>
+            </div>
           </form>
         </div>
       ) : null}
