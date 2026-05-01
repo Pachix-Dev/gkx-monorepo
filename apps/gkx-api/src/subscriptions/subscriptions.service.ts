@@ -697,6 +697,7 @@ export class SubscriptionsService {
       activeSubscription.stripeSubscriptionId as string,
       {
         cancel_at_period_end: false,
+        billing_cycle_anchor: 'now',
         proration_behavior: 'create_prorations',
         items: [{ id: subscriptionItemId, price: targetPriceId }],
         metadata: {
@@ -1145,10 +1146,14 @@ export class SubscriptionsService {
       }
     }
 
-    const currentPeriodEnd =
-      this.readNumber(stripeSub.current_period_end) ??
-      Math.floor(subscription.currentPeriodEnd.getTime() / 1000);
-    const currentPeriodStart = this.readNumber(stripeSub.current_period_start);
+    const currentPeriodStart =
+      this.readNumber(stripeSub.current_period_start) ??
+      Math.floor(subscription.currentPeriodStart.getTime() / 1000);
+    const fallbackCurrentPeriodEnd = Math.floor(
+      subscription.currentPeriodEnd.getTime() / 1000,
+    );
+    const rawCurrentPeriodEnd =
+      this.readNumber(stripeSub.current_period_end) ?? fallbackCurrentPeriodEnd;
     const currentPriceId =
       subscription.stripePriceId ??
       this.readString(
@@ -1162,6 +1167,22 @@ export class SubscriptionsService {
     if (!currentPriceId) {
       throw new BadRequestException(
         'Could not determine current Stripe price ID',
+      );
+    }
+
+    if (!Number.isFinite(currentPeriodStart) || currentPeriodStart <= 0) {
+      throw new BadRequestException(
+        'Could not determine a valid Stripe current_period_start timestamp',
+      );
+    }
+
+    let currentPeriodEnd = rawCurrentPeriodEnd;
+    if (currentPeriodEnd <= currentPeriodStart) {
+      currentPeriodEnd = Math.floor(
+        this.computePeriodEndFromPlan(
+          new Date(currentPeriodStart * 1000),
+          subscription.plan,
+        ).getTime() / 1000,
       );
     }
 
