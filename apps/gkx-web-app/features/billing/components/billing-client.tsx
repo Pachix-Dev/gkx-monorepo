@@ -767,11 +767,11 @@ export function BillingClient() {
                 current={usageQuery.data.usage.teams}
                 limit={usageQuery.data.limits.teams}
               />
-              <UsageCard
+              {/*<UsageCard
                 label="Users"
                 current={usageQuery.data.usage.users}
                 limit={usageQuery.data.limits.users}
-              />
+              />*/}
               <UsageCard
                 label="Sessions / month"
                 current={usageQuery.data.usage.sessionsPerMonth}
