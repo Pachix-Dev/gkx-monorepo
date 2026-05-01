@@ -520,7 +520,7 @@ export function BillingClient() {
       success: {
         title:
           paymentMethod === "CARD"
-            ? "Redirigiendo a checkout"
+            ? "Solicitud de plan procesada"
             : "Solicitud SPEI registrada",
       },
       error: { title: "No se pudo crear la solicitud" },
@@ -528,7 +528,16 @@ export function BillingClient() {
 
     if (result?.checkoutUrl && typeof window !== "undefined") {
       window.location.assign(result.checkoutUrl);
+      return;
     }
+
+    setIsPlansModalOpen(false);
+    await Promise.all([
+      activeSubscriptionQuery.refetch(),
+      subscriptionsQuery.refetch(),
+      myRequestsQuery.refetch(),
+      usageQuery.refetch(),
+    ]);
   };
 
   const handleCustomerPortal = async () => {

@@ -708,7 +708,12 @@ export class SubscriptionsService {
       },
     );
 
-    await this.syncStripeSubscription(updated);
+    const updatedId = this.readString(updated.id);
+    const latestSubscription = updatedId
+      ? await stripe.subscriptions.retrieve(updatedId)
+      : updated;
+
+    await this.syncStripeSubscription(latestSubscription);
 
     request.status = PlanChangeRequestStatus.COMPLETED;
     request.reviewedAt = new Date();
