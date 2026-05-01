@@ -4,7 +4,7 @@ export interface TenantRecord {
   id: string;
   name: string;
   slug: string;
-  plan: 'FREE' | 'BASIC' | 'PRO' | 'ENTERPRISE';
+  plan: 'FREE' | 'BASIC' | 'PRO';
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: Date;
 }

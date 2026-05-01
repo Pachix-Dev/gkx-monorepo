@@ -12,7 +12,6 @@ export enum TenantPlan {
   FREE = 'FREE',
   BASIC = 'BASIC',
   PRO = 'PRO',
-  ENTERPRISE = 'ENTERPRISE',
 }
 
 export enum TenantStatus {

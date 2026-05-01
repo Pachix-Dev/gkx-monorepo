@@ -54,7 +54,7 @@ export class SuperAdminBootstrap implements OnApplicationBootstrap {
       tenant = this.tenantsRepository.create({
         name: tenantName,
         slug: tenantSlug,
-        plan: TenantPlan.ENTERPRISE,
+        plan: TenantPlan.PRO,
         status: TenantStatus.ACTIVE,
       });
       tenant = await this.tenantsRepository.save(tenant);

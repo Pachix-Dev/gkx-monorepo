@@ -50,7 +50,6 @@ STRIPE_WEBHOOK_SECRET="whsec_xxx"
 BILLING_BASE_URL="http://localhost:3001"
 STRIPE_PRICE_ID_BASIC="price_xxx"
 STRIPE_PRICE_ID_PRO="price_xxx"
-STRIPE_PRICE_ID_ENTERPRISE="price_xxx"
 ```
 
 ## Probar webhook Stripe end-to-end

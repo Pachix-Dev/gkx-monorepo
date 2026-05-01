@@ -5,7 +5,7 @@ export type Tenant = {
   id: string;
   name: string;
   slug: string;
-  plan: "FREE" | "BASIC" | "PRO" | "ENTERPRISE";
+  plan: "FREE" | "BASIC" | "PRO";
   status: "ACTIVE" | "INACTIVE";
   createdAt: string;
   updatedAt: string;

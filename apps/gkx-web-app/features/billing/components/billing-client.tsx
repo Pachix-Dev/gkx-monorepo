@@ -46,7 +46,6 @@ const PLAN_RANK: Record<SubscriptionPlan, number> = {
   FREE: 0,
   BASIC: 1,
   PRO: 2,
-  ENTERPRISE: 3,
 };
 
 const PLAN_FEATURES: Record<
@@ -73,13 +72,6 @@ const PLAN_FEATURES: Record<
     { text: "Analitica avanzada", included: true },
     { text: "Biblioteca de sesiones", included: true },
     { text: "Multi-sede", included: false },
-  ],
-  ENTERPRISE: [
-    { text: "Equipos y usuarios ilimitados", included: true },
-    { text: "Operacion multi-sede", included: true },
-    { text: "Soporte prioritario", included: true },
-    { text: "Onboarding dedicado", included: true },
-    { text: "Flujos personalizados", included: true },
   ],
 };
 

@@ -2,7 +2,7 @@ import { apiRequest } from "@/lib/api/client";
 import { extractData } from "@/lib/api/response";
 
 export type PlanUsagePayload = {
-  plan: "FREE" | "BASIC" | "PRO" | "ENTERPRISE";
+  plan: "FREE" | "BASIC" | "PRO";
   limits: {
     goalkeepers: number | null;
     teams: number | null;

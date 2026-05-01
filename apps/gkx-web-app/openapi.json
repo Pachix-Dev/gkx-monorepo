@@ -6134,8 +6134,7 @@
             "enum": [
               "FREE",
               "BASIC",
-              "PRO",
-              "ENTERPRISE"
+              "PRO"
             ],
             "example": "FREE"
           },

@@ -26,12 +26,6 @@ export const PLAN_LIMITS: Record<TenantPlan, PlanLimits> = {
     sessionsPerMonth: 200,
     users: 15,
   },
-  [TenantPlan.ENTERPRISE]: {
-    goalkeepers: Infinity,
-    teams: Infinity,
-    sessionsPerMonth: Infinity,
-    users: Infinity,
-  },
 };
 
 export type PlanLimitResource = keyof PlanLimits;

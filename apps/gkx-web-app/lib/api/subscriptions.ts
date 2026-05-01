@@ -7,7 +7,7 @@ export type SubscriptionStatus =
   | "PAST_DUE"
   | "CANCELED"
   | "EXPIRED";
-export type SubscriptionPlan = "FREE" | "BASIC" | "PRO" | "ENTERPRISE";
+export type SubscriptionPlan = "FREE" | "BASIC" | "PRO";
 export type PlanPaymentMethod = "CARD" | "SPEI";
 export type PlanChangeRequestStatus =
   | "PENDING_PAYMENT"

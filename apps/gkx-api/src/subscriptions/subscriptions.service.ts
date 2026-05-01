@@ -84,7 +84,6 @@ const PLAN_ORDER: Record<TenantPlan, number> = {
   [TenantPlan.FREE]: 0,
   [TenantPlan.BASIC]: 1,
   [TenantPlan.PRO]: 2,
-  [TenantPlan.ENTERPRISE]: 3,
 };
 
 @Injectable()
@@ -990,7 +989,6 @@ export class SubscriptionsService {
 
     const normalized = raw.toLowerCase();
 
-    if (normalized.includes('enterprise')) return TenantPlan.ENTERPRISE;
     if (normalized.includes('pro')) return TenantPlan.PRO;
     if (normalized.includes('basic')) return TenantPlan.BASIC;
     if (normalized.includes('free')) return TenantPlan.FREE;
@@ -1124,6 +1122,7 @@ export class SubscriptionsService {
     const currentPeriodEnd =
       this.readNumber(stripeSub.current_period_end) ??
       Math.floor(subscription.currentPeriodEnd.getTime() / 1000);
+    const currentPeriodStart = this.readNumber(stripeSub.current_period_start);
     const currentPriceId =
       subscription.stripePriceId ??
       this.readString(
@@ -1153,9 +1152,18 @@ export class SubscriptionsService {
       | undefined;
     const currentPhaseStart = this.readNumber(currentPhase?.start_date);
 
-    if (!Number.isFinite(currentPhaseStart) || (currentPhaseStart ?? 0) <= 0) {
+    const candidatePhaseStarts = [currentPeriodStart, currentPhaseStart].filter(
+      (value): value is number =>
+        typeof value === 'number' &&
+        Number.isFinite(value) &&
+        value > 0 &&
+        value < currentPeriodEnd,
+    );
+    const phaseStart = candidatePhaseStarts[0] ?? null;
+
+    if (!Number.isFinite(phaseStart) || (phaseStart ?? 0) <= 0) {
       throw new BadRequestException(
-        'Could not determine a valid Stripe current phase start_date',
+        'Could not determine a valid Stripe phase start_date before current_period_end',
       );
     }
 
@@ -1163,7 +1171,7 @@ export class SubscriptionsService {
       end_behavior: 'release',
       phases: [
         {
-          start_date: currentPhaseStart,
+          start_date: phaseStart,
           end_date: currentPeriodEnd,
           items: [{ price: currentPriceId, quantity: 1 }],
           proration_behavior: 'none',

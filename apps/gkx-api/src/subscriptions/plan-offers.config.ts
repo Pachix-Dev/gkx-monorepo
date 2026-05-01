@@ -15,14 +15,12 @@ const DEFAULT_PRICES: Record<TenantPlan, number> = {
   [TenantPlan.FREE]: 0,
   [TenantPlan.BASIC]: 499,
   [TenantPlan.PRO]: 1299,
-  [TenantPlan.ENTERPRISE]: 2999,
 };
 
 const DEFAULT_INTERVALS: Record<TenantPlan, 'month' | 'year'> = {
   [TenantPlan.FREE]: 'month',
   [TenantPlan.BASIC]: 'month',
   [TenantPlan.PRO]: 'year',
-  [TenantPlan.ENTERPRISE]: 'year',
 };
 
 function resolvePlanPrice(plan: TenantPlan): number {
@@ -56,11 +54,7 @@ export function getRecurringPlanPriceId(plan: TenantPlan): string | null {
 export function mapStripePriceToPlan(raw: string | null): TenantPlan | null {
   if (!raw) return null;
 
-  for (const plan of [
-    TenantPlan.BASIC,
-    TenantPlan.PRO,
-    TenantPlan.ENTERPRISE,
-  ]) {
+  for (const plan of [TenantPlan.BASIC, TenantPlan.PRO]) {
     const configuredPriceId = resolveRecurringPriceId(plan);
     if (configuredPriceId && configuredPriceId === raw) {
       return plan;
@@ -68,7 +62,6 @@ export function mapStripePriceToPlan(raw: string | null): TenantPlan | null {
   }
 
   const normalized = raw.toLowerCase();
-  if (normalized.includes('enterprise')) return TenantPlan.ENTERPRISE;
   if (normalized.includes('pro')) return TenantPlan.PRO;
   if (normalized.includes('basic')) return TenantPlan.BASIC;
   if (normalized.includes('free')) return TenantPlan.FREE;
@@ -104,15 +97,6 @@ export function getPlanOffers(): PlanOffer[] {
       description: 'Escalado para academias con operacion continua.',
       paymentMethods: [PlanPaymentMethod.CARD, PlanPaymentMethod.SPEI],
       cardEnabled: Boolean(resolveRecurringPriceId(TenantPlan.PRO)),
-    },
-    {
-      plan: TenantPlan.ENTERPRISE,
-      label: 'Enterprise',
-      priceMxn: resolvePlanPrice(TenantPlan.ENTERPRISE),
-      billingInterval: resolvePlanInterval(TenantPlan.ENTERPRISE),
-      description: 'Capacidad extendida para organizaciones multi-sede.',
-      paymentMethods: [PlanPaymentMethod.CARD, PlanPaymentMethod.SPEI],
-      cardEnabled: Boolean(resolveRecurringPriceId(TenantPlan.ENTERPRISE)),
     },
   ];
 }
