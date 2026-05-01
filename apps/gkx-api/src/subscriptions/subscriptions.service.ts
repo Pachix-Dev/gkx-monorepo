@@ -784,8 +784,7 @@ export class SubscriptionsService {
     if (!tenant) throw new NotFoundException('Tenant not found');
 
     const now = new Date();
-    const periodEnd = new Date(now);
-    periodEnd.setMonth(periodEnd.getMonth() + 1);
+    const periodEnd = this.computePeriodEndFromPlan(now, plan);
 
     // Always create a new record so existing Stripe-linked records are not overwritten
     // and can continue syncing independently via webhooks.
@@ -921,13 +920,20 @@ export class SubscriptionsService {
 
     subscription.status = status;
     subscription.plan = plan;
-    subscription.currentPeriodStart = this.toDateOrFallback(
+    const periodStart = this.toDateOrFallback(
       payload.current_period_start,
       subscription.currentPeriodStart,
     );
-    subscription.currentPeriodEnd = this.toDateOrFallback(
+    const periodEnd = this.toDateOrFallback(
       payload.current_period_end,
       subscription.currentPeriodEnd,
+    );
+
+    subscription.currentPeriodStart = periodStart;
+    subscription.currentPeriodEnd = this.ensureValidPeriodEnd(
+      periodStart,
+      periodEnd,
+      plan,
     );
     subscription.trialEndsAt = this.toDateOrNull(payload.trial_end);
     subscription.canceledAt = this.toDateOrNull(payload.canceled_at);
@@ -1015,6 +1021,26 @@ export class SubscriptionsService {
         'currentPeriodEnd must be later than currentPeriodStart',
       );
     }
+  }
+
+  private computePeriodEndFromPlan(start: Date, plan: TenantPlan): Date {
+    const end = new Date(start);
+
+    if (plan === TenantPlan.PRO) {
+      end.setFullYear(end.getFullYear() + 1);
+      return end;
+    }
+
+    end.setMonth(end.getMonth() + 1);
+    return end;
+  }
+
+  private ensureValidPeriodEnd(start: Date, end: Date, plan: TenantPlan): Date {
+    if (end.getTime() > start.getTime()) {
+      return end;
+    }
+
+    return this.computePeriodEndFromPlan(start, plan);
   }
 
   private toDateOrNull(value: unknown): Date | null {

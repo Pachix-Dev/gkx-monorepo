@@ -859,7 +859,7 @@ export function BillingClient() {
               </button>
             </div>
 
-            <div className="mt-4 grid max-h-[75vh] gap-3 overflow-y-auto sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-4 grid max-h-[75vh] gap-3 overflow-y-auto sm:grid-cols-2 md:grid-cols-3">
               {planOffers.map((offer) => {
                 const isCurrentPlan = PLAN_RANK[offer.plan] === PLAN_RANK[currentPlan];
                 const isDowngrade = PLAN_RANK[offer.plan] < PLAN_RANK[currentPlan];
