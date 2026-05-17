@@ -64,6 +64,54 @@ const CATEGORY_ORDER: Record<string, number> = {
   muñeco: 12,
 };
 
+type ImageMetadata = {
+  name?: string;
+  order?: number;
+};
+
+const BACKGROUND_METADATA: Record<string, ImageMetadata> = {
+  "PORTERIA_FRONTAL.png": {
+    name: "Porteria frontal",
+    order: 1,
+  },
+  "PORTERIA_FRONTAL_LEJOS.png": {
+    name: "Porteria frontal lejana",
+    order: 2,
+  },
+  "PORTERIA_HORIZONTAL_DERECHO.png": {
+    name: "Porteria horizontal derecha",
+    order: 3,
+  },
+  "PORTERIA_HORIZONTAL_IZQUIERDO.png": {
+    name: "Porteria horizontal izquierda",
+    order: 4,
+  },
+  "PORTERIA_LATERAL_DERECHO.png": {
+    name: "Porteria lateral derecha",
+    order: 5,
+  },
+  "PORTERIA_LATERAL_IZQUIERDO.png": {
+    name: "Porteria lateral izquierda",
+    order: 6,
+  },
+  "PORTERIA_LATERAL_IZQUIERDO_BAJO.png": {
+    name: "Porteria lateral izquierda baja",
+    order: 7,
+  },
+  "PORTERIA_REVERSO.png": {
+    name: "Porteria reverso",
+    order: 8,
+  },
+  "ZonaNeutra1.jpg": {
+    name: "Zona neutra 1",
+    order: 90,
+  },
+  "ZonaNeutra2.jpg": {
+    name: "Zona neutra 2",
+    order: 91,
+  },
+};
+
 function normalizeLabel(value: string) {
   return value
     .replace(/\.[^/.]+$/, "")
@@ -77,21 +125,42 @@ function buildPublicSrc(...segments: string[]) {
   return `/${segments.map((segment) => encodeURIComponent(segment)).join("/")}`;
 }
 
-async function readImages(dirPath: string, publicSegments: string[]): Promise<EditorBackground[]> {
+async function readImages(
+  dirPath: string,
+  publicSegments: string[],
+  metadata: Record<string, ImageMetadata> = {},
+): Promise<EditorBackground[]> {
   const entries = await readDirSafe(dirPath);
 
   return entries
     .filter((entry) => entry.isFile() && IMAGE_PATTERN.test(entry.name))
-    .sort((left, right) => left.name.localeCompare(right.name, "es", { numeric: true, sensitivity: "base" }))
+    .sort((left, right) => {
+      const leftOrder = metadata[left.name]?.order ?? Number.MAX_SAFE_INTEGER;
+      const rightOrder =
+        metadata[right.name]?.order ?? Number.MAX_SAFE_INTEGER;
+
+      if (leftOrder !== rightOrder) {
+        return leftOrder - rightOrder;
+      }
+
+      return left.name.localeCompare(right.name, "es", {
+        numeric: true,
+        sensitivity: "base",
+      });
+    })
     .map((entry) => ({
       id: entry.name,
-      name: normalizeLabel(entry.name),
+      name: metadata[entry.name]?.name ?? normalizeLabel(entry.name),
       src: buildPublicSrc(...publicSegments, entry.name),
     }));
 }
 
 export async function getEditorBackgrounds(): Promise<EditorBackground[]> {
-  return readImages(BACKGROUND_DIR, ["editor-assets", "backgrounds"]);
+  return readImages(
+    BACKGROUND_DIR,
+    ["editor-assets", "backgrounds"],
+    BACKGROUND_METADATA,
+  );
 }
 
 export async function getEditorShapeGroups(): Promise<EditorShapeGroup[]> {

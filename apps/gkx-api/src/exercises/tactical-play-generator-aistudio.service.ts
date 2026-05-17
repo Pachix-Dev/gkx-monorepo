@@ -619,7 +619,7 @@ ESQUEMA EXACTO DE RESPUESTA:
 
     if (!backgroundId) return fullBounds;
 
-    if (backgroundId.startsWith('frontal-')) {
+    if (backgroundId.startsWith('porteria-frontal')) {
       return {
         xMin: CANVAS_WIDTH * 0.18,
         xMax: CANVAS_WIDTH * 0.86,
@@ -628,7 +628,10 @@ ESQUEMA EXACTO DE RESPUESTA:
       };
     }
 
-    if (backgroundId.startsWith('lateral-area-')) {
+    if (
+      backgroundId.startsWith('porteria-horizontal') ||
+      backgroundId.startsWith('porteria-lateral')
+    ) {
       return {
         xMin: CANVAS_WIDTH * 0.1,
         xMax: CANVAS_WIDTH * 0.92,
@@ -637,30 +640,12 @@ ESQUEMA EXACTO DE RESPUESTA:
       };
     }
 
-    if (backgroundId.startsWith('trasera-area-')) {
+    if (backgroundId.startsWith('porteria-reverso')) {
       return {
         xMin: CANVAS_WIDTH * 0.12,
         xMax: CANVAS_WIDTH * 0.9,
         yMin: CANVAS_HEIGHT * 0.26,
         yMax: CANVAS_HEIGHT * 0.86,
-      };
-    }
-
-    if (backgroundId.startsWith('medio-campo-')) {
-      return {
-        xMin: CANVAS_WIDTH * 0.08,
-        xMax: CANVAS_WIDTH * 0.92,
-        yMin: CANVAS_HEIGHT * 0.24,
-        yMax: CANVAS_HEIGHT * 0.9,
-      };
-    }
-
-    if (backgroundId.startsWith('corner-')) {
-      return {
-        xMin: CANVAS_WIDTH * 0.08,
-        xMax: CANVAS_WIDTH * 0.92,
-        yMin: CANVAS_HEIGHT * 0.34,
-        yMax: CANVAS_HEIGHT * 0.95,
       };
     }
 

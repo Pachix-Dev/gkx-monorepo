@@ -61,7 +61,7 @@ export class GeneratePlayDto {
   @ApiPropertyOptional({
     description:
       'ID de fondo del catálogo preferido por el entrenador (si no se especifica, la IA elige)',
-    example: 'media-cancha-superior',
+    example: 'porteria-frontal',
   })
   @IsOptional()
   @IsString()

@@ -13,7 +13,7 @@
  *   - Incrementar CATALOG_VERSION al modificar assetIds o backgroundIds.
  */
 
-export const CATALOG_VERSION = '2.0.0';
+export const CATALOG_VERSION = '3.0.0';
 
 // ─── Canvas ──────────────────────────────────────────────────────────────────
 // Valores en sync con FIXED_STAGE_WIDTH / FIXED_STAGE_HEIGHT del editor
@@ -553,7 +553,8 @@ export const CATALOG_ASSETS: CatalogAsset[] = [
 ];
 
 // ─── Fondos ──────────────────────────────────────────────────────────────────
-export const CATALOG_BACKGROUNDS: CatalogBackground[] = [
+// Legacy reference kept while the old background set is phased out.
+export const LEGACY_CATALOG_BACKGROUNDS: CatalogBackground[] = [
   // ── Vistas frontales del arco ───────────────────────────────────────────────
   {
     backgroundId: 'frontal-1',
@@ -673,6 +674,79 @@ export const CATALOG_BACKGROUNDS: CatalogBackground[] = [
 export const CATALOG_ASSET_BY_ID = new Map<string, CatalogAsset>(
   CATALOG_ASSETS.map((a) => [a.assetId, a]),
 );
+
+export const CATALOG_BACKGROUNDS: CatalogBackground[] = [
+  {
+    backgroundId: 'porteria-frontal',
+    name: 'Porteria frontal',
+    src: '/editor-assets/backgrounds/PORTERIA_FRONTAL.png',
+    aiDescription:
+      'Vista frontal de la porteria desde dentro del campo; ideal para ejercicios de salida, blocaje y distribucion.',
+  },
+  {
+    backgroundId: 'porteria-frontal-lejos',
+    name: 'Porteria frontal lejana',
+    src: '/editor-assets/backgrounds/PORTERIA_FRONTAL_LEJOS.png',
+    aiDescription:
+      'Vista frontal de la porteria con una camara mas alejada; util para recorridos con mayor profundidad.',
+  },
+  {
+    backgroundId: 'porteria-horizontal-derecho',
+    name: 'Porteria horizontal derecha',
+    src: '/editor-assets/backgrounds/PORTERIA_HORIZONTAL_DERECHO.png',
+    aiDescription:
+      'Vista horizontal de la porteria desde el lado derecho; util para coberturas laterales y trayectorias diagonales.',
+  },
+  {
+    backgroundId: 'porteria-horizontal-izquierdo',
+    name: 'Porteria horizontal izquierda',
+    src: '/editor-assets/backgrounds/PORTERIA_HORIZONTAL_IZQUIERDO.png',
+    aiDescription:
+      'Vista horizontal de la porteria desde el lado izquierdo; buena para ejercicios con centros, cruces y cambios de apoyo.',
+  },
+  {
+    backgroundId: 'porteria-lateral-derecho',
+    name: 'Porteria lateral derecha',
+    src: '/editor-assets/backgrounds/PORTERIA_LATERAL_DERECHO.png',
+    aiDescription:
+      'Vista lateral derecha del area de porteria; ideal para salidas al segundo palo, cierres y 1vs1 lateral.',
+  },
+  {
+    backgroundId: 'porteria-lateral-izquierdo',
+    name: 'Porteria lateral izquierda',
+    src: '/editor-assets/backgrounds/PORTERIA_LATERAL_IZQUIERDO.png',
+    aiDescription:
+      'Vista lateral izquierda del area de porteria; util para ejercicios de perfilacion, achique y desplazamiento lateral.',
+  },
+  {
+    backgroundId: 'porteria-lateral-izquierdo-bajo',
+    name: 'Porteria lateral izquierda baja',
+    src: '/editor-assets/backgrounds/PORTERIA_LATERAL_IZQUIERDO_BAJO.png',
+    aiDescription:
+      'Vista lateral izquierda en angulo bajo; resalta acciones cercanas al piso y trayectorias rasas.',
+  },
+  {
+    backgroundId: 'porteria-reverso',
+    name: 'Porteria reverso',
+    src: '/editor-assets/backgrounds/PORTERIA_REVERSO.png',
+    aiDescription:
+      'Vista reversa de la porteria con el campo al frente; ideal para salidas, despejes y distribucion desde atras.',
+  },
+  {
+    backgroundId: 'zona-neutra-1',
+    name: 'Zona neutra 1',
+    src: '/editor-assets/backgrounds/ZonaNeutra1.jpg',
+    aiDescription:
+      'Fondo neutro sin lineas de campo; ideal para preparacion fisica, coordinacion y circuitos fuera del area.',
+  },
+  {
+    backgroundId: 'zona-neutra-2',
+    name: 'Zona neutra 2',
+    src: '/editor-assets/backgrounds/ZonaNeutra2.jpg',
+    aiDescription:
+      'Fondo neutro alternativo; util para calentamiento, movilidad o circuitos sin referencias de campo.',
+  },
+];
 
 export const CATALOG_BACKGROUND_BY_ID = new Map<string, CatalogBackground>(
   CATALOG_BACKGROUNDS.map((b) => [b.backgroundId, b]),

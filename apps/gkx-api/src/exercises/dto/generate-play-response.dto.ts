@@ -2,8 +2,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class GeneratePlayResponseDto {
   @ApiPropertyOptional({
-    description: 'ID del fondo sugerido por la IA (del catálogo de assets)',
-    example: 'media-cancha-superior',
+    description: 'ID del fondo sugerido por la IA (del catálogo de backgrounds)',
+    example: 'porteria-frontal',
     nullable: true,
   })
   backgroundId!: string | null;
@@ -11,7 +11,7 @@ export class GeneratePlayResponseDto {
   @ApiPropertyOptional({
     description:
       'Ruta pública del fondo sugerido, lista para asignar en backgroundSrc del editor',
-    example: '/editor-assets/backgrounds/media-cancha-superior.png',
+    example: '/editor-assets/backgrounds/PORTERIA_FRONTAL.png',
     nullable: true,
   })
   backgroundSrc!: string | null;
