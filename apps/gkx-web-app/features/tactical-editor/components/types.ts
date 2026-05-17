@@ -1,7 +1,16 @@
+type EditorAssetVariant = {
+  id: string;
+  name: string;
+  src: string;
+};
+
 type EditorAsset = {
   id: string;
   name: string;
   src: string;
+  variants?: EditorAssetVariant[];
+  defaultWidth?: number;
+  defaultHeight?: number;
 };
 
 type EditorAssetGroup = {
@@ -32,6 +41,9 @@ type ImageElement = BaseElement & {
   width: number;
   height: number;
   label: string;
+  assetItemId?: string;
+  variants?: EditorAssetVariant[];
+  variantIndex?: number;
 };
 
 type TextElement = BaseElement & {
@@ -86,6 +98,7 @@ type TacticalEditorClientProps = {
 
 export type {
   EditorAsset,
+  EditorAssetVariant,
   EditorAssetGroup,
   ToolPanel,
   LinePattern,

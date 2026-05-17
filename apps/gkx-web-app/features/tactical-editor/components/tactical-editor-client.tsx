@@ -375,12 +375,22 @@ function TacticalEditorClientContent({ backgrounds, shapeGroups, exerciseId }: T
   };
 
   const addAssetElement = (groupId: string, asset: EditorAsset) => {
-    const size = getAssetDefaultSize(groupId);
+    const size =
+      asset.defaultWidth && asset.defaultHeight
+        ? {
+            width: asset.defaultWidth,
+            height: asset.defaultHeight,
+          }
+        : getAssetDefaultSize(groupId);
+    const nextId = createId("asset");
+    const initialVariantIndex = asset.variants?.findIndex(
+      (variant) => variant.src === asset.src,
+    );
 
     setElements((current) => [
       ...current,
       {
-        id: createId("asset"),
+        id: nextId,
         kind: "asset",
         x: FIXED_STAGE_CENTER_X - size.width / 2,
         y: FIXED_STAGE_CENTER_Y - size.height / 2,
@@ -388,6 +398,14 @@ function TacticalEditorClientContent({ backgrounds, shapeGroups, exerciseId }: T
         height: size.height,
         src: asset.src,
         label: asset.name,
+        assetItemId: asset.id,
+        variants: asset.variants,
+        variantIndex:
+          typeof initialVariantIndex === "number" && initialVariantIndex >= 0
+            ? initialVariantIndex
+            : asset.variants?.length
+              ? 0
+              : undefined,
         rotation: 0,
         scaleX: 1,
         scaleY: 1,
@@ -395,6 +413,8 @@ function TacticalEditorClientContent({ backgrounds, shapeGroups, exerciseId }: T
         locked: false,
       },
     ]);
+
+    setSelectedId(nextId);
   };
 
   const addTextElement = () => {

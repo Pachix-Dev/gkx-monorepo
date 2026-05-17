@@ -9,11 +9,12 @@
  * Mantenimiento:
  *   - Los `src` deben coincidir con los archivos reales en
  *     apps/gkx-web-app/public/editor-assets/shapes/{groupId}/{filename}
+ *     o apps/gkx-web-app/public/editor-assets/shapes/goalkeepers/{poseId}/{filename}
  *   - Sincronizar con get-editor-assets.ts cuando se agreguen archivos nuevos.
  *   - Incrementar CATALOG_VERSION al modificar assetIds o backgroundIds.
  */
 
-export const CATALOG_VERSION = '3.0.0';
+export const CATALOG_VERSION = '4.0.0';
 
 // ─── Canvas ──────────────────────────────────────────────────────────────────
 // Valores en sync con FIXED_STAGE_WIDTH / FIXED_STAGE_HEIGHT del editor
@@ -51,7 +52,7 @@ export type CatalogBackground = {
 };
 
 // ─── Assets ──────────────────────────────────────────────────────────────────
-export const CATALOG_ASSETS: CatalogAsset[] = [
+export const LEGACY_CATALOG_ASSETS: CatalogAsset[] = [
   // ── Porteros — posiciones base ──────────────────────────────────────────────
   {
     assetId: 'gk-standing',
@@ -671,6 +672,314 @@ export const LEGACY_CATALOG_BACKGROUNDS: CatalogBackground[] = [
 ];
 
 // ─── Índices de acceso rápido ─────────────────────────────────────────────────
+const normalizeGoalkeeperPathSegment = (value: string) =>
+  value.replace(/Ã±/g, '\u00F1');
+
+const buildGoalkeeperSrc = (poseId: string, fileName: string) =>
+  `/editor-assets/shapes/goalkeepers/${encodeURIComponent(normalizeGoalkeeperPathSegment(poseId))}/${encodeURIComponent(normalizeGoalkeeperPathSegment(fileName))}`;
+
+export const CATALOG_GOALKEEPER_ASSETS: CatalogAsset[] = [
+  {
+    assetId: 'gk-pose-01-basica-parado',
+    groupId: 'goalkeepers',
+    label: 'Basica parado',
+    src: buildGoalkeeperSrc('1 basica', 'GK01_BASICA_PARADO_P01_R1.png'),
+    defaultWidth: 72,
+    defaultHeight: 102,
+    aiDescription:
+      'Portero en posicion basica de pie, neutral y listo para iniciar la accion.',
+  },
+  {
+    assetId: 'gk-pose-02-hincado',
+    groupId: 'goalkeepers',
+    label: 'Hincado',
+    src: buildGoalkeeperSrc('2  incado', 'GK01_BASICA_INCADO_P01_R1.png'),
+    defaultWidth: 76,
+    defaultHeight: 94,
+    aiDescription:
+      'Portero hincado, util para ejercicios de reaccion corta y arranque desde el piso.',
+  },
+  {
+    assetId: 'gk-pose-03-punos-izquierda',
+    groupId: 'goalkeepers',
+    label: 'Despeje de punos izquierda',
+    src: buildGoalkeeperSrc(
+      '3 puños izquierda',
+      'GK01_DESPEJE_PUNOIZQUIERDO_P01_R1.png',
+    ),
+    defaultWidth: 86,
+    defaultHeight: 108,
+    aiDescription:
+      'Portero despejando con los punos hacia su lado izquierdo en una accion aerea.',
+  },
+  {
+    assetId: 'gk-pose-04-punos-derecha',
+    groupId: 'goalkeepers',
+    label: 'Despeje de punos derecha',
+    src: buildGoalkeeperSrc(
+      '4 puños derecha',
+      'GK01_DESPEJE_PUNODERECHO_P01_R1.png',
+    ),
+    defaultWidth: 86,
+    defaultHeight: 108,
+    aiDescription:
+      'Portero despejando con los punos hacia su lado derecho en una accion aerea.',
+  },
+  {
+    assetId: 'gk-pose-05-guardia-alta',
+    groupId: 'goalkeepers',
+    label: 'Guardia alta',
+    src: buildGoalkeeperSrc('5 arriba', 'GK01_PREPARACION_GUARDIA_P01_R1.png'),
+    defaultWidth: 72,
+    defaultHeight: 110,
+    aiDescription:
+      'Portero en guardia alta, preparado para recepciones por arriba del pecho.',
+  },
+  {
+    assetId: 'gk-pose-06-volar-izquierda',
+    groupId: 'goalkeepers',
+    label: 'Atajada volar izquierda',
+    src: buildGoalkeeperSrc(
+      '6 atajada volar izquierda',
+      'GK01_DESVIO_VOLARIZQUIERDA_P01_R1.png',
+    ),
+    defaultWidth: 116,
+    defaultHeight: 70,
+    aiDescription:
+      'Portero volando hacia la izquierda para una atajada de extension completa.',
+  },
+  {
+    assetId: 'gk-pose-07-volar-derecha',
+    groupId: 'goalkeepers',
+    label: 'Atajada volar derecha',
+    src: buildGoalkeeperSrc(
+      '7  atajada volar derecha',
+      'GK01_DESVIO_VOLARDERECHA_P01_R1.png',
+    ),
+    defaultWidth: 116,
+    defaultHeight: 70,
+    aiDescription:
+      'Portero volando hacia la derecha para una atajada de extension completa.',
+  },
+  {
+    assetId: 'gk-pose-08-barrera-amplia',
+    groupId: 'goalkeepers',
+    label: 'Barrera amplia',
+    src: buildGoalkeeperSrc(
+      '8 manos abierta',
+      'GK01_ACHIQUE_BARRERAAMPLIA_P01_R1.png',
+    ),
+    defaultWidth: 92,
+    defaultHeight: 104,
+    aiDescription:
+      'Portero en barrera amplia con manos abiertas, util para achique y bloqueo frontal.',
+  },
+  {
+    assetId: 'gk-pose-09-atajada-aerea-lateral',
+    groupId: 'goalkeepers',
+    label: 'Atajada aerea lateral',
+    src: buildGoalkeeperSrc(
+      '9 corriendo',
+      'GK01_DESVIO_ATAJADAAEREALATERAL_P01_R1.png',
+    ),
+    defaultWidth: 82,
+    defaultHeight: 108,
+    aiDescription:
+      'Portero en una atajada aerea lateral, con el cuerpo orientado al desvio.',
+  },
+  {
+    assetId: 'gk-pose-10-extension-x',
+    groupId: 'goalkeepers',
+    label: 'Atajada extension X',
+    src: buildGoalkeeperSrc(
+      '10 posicion x',
+      'GK01_DESVIO_ATAJADAEXTENSIONX_P01_R1.png',
+    ),
+    defaultWidth: 104,
+    defaultHeight: 96,
+    aiDescription:
+      'Portero en posicion de extension X para bloquear un remate a corta distancia.',
+  },
+  {
+    assetId: 'gk-pose-11-atajada-baja',
+    groupId: 'goalkeepers',
+    label: 'Atajada baja',
+    src: buildGoalkeeperSrc(
+      '11 atajada baja',
+      'GK01_BLOCAJE_RECEPCIONBAJA_P01_R1.png',
+    ),
+    defaultWidth: 72,
+    defaultHeight: 110,
+    aiDescription:
+      'Portero en recepcion baja, preparado para blocar o asegurar un disparo raso.',
+  },
+  {
+    assetId: 'gk-pose-12-manos-extendidas',
+    groupId: 'goalkeepers',
+    label: 'Atajada manos extendidas',
+    src: buildGoalkeeperSrc(
+      '12 atajada manos extendidas',
+      'GK01_BLOCAJE_BAJOLATERAL_P01_R1.png',
+    ),
+    defaultWidth: 110,
+    defaultHeight: 72,
+    aiDescription:
+      'Portero en blocaje bajo lateral con ambas manos extendidas hacia el balon.',
+  },
+  {
+    assetId: 'gk-pose-13-salto',
+    groupId: 'goalkeepers',
+    label: 'Salto',
+    src: buildGoalkeeperSrc('13 salto', 'GK01_BLOCAJE_RECEPCIONALTA_P01_R1.png'),
+    defaultWidth: 72,
+    defaultHeight: 118,
+    aiDescription:
+      'Portero saltando para una recepcion alta o intercepcion en el juego aereo.',
+  },
+  {
+    assetId: 'gk-pose-14-lado-pierna-levantada',
+    groupId: 'goalkeepers',
+    label: 'Atajada lado pierna levantada',
+    src: buildGoalkeeperSrc(
+      '14 atajada lado pierna levantada',
+      'GK01_BLOCAJE_DESVIOALTO_P01_R1.png',
+    ),
+    defaultWidth: 108,
+    defaultHeight: 76,
+    aiDescription:
+      'Portero desviando alto con apoyo lateral y una pierna levantada para ampliar cobertura.',
+  },
+  {
+    assetId: 'gk-pose-15-ataque-suelo',
+    groupId: 'goalkeepers',
+    label: 'Ataque al suelo',
+    src: buildGoalkeeperSrc(
+      '15 ataque suelo',
+      'GK01_BLOCAJE_ACHIQUE SENTADO_P01_R1.png',
+    ),
+    defaultWidth: 112,
+    defaultHeight: 76,
+    aiDescription:
+      'Portero atacando el suelo en un achique corto o blocaje muy cercano.',
+  },
+  {
+    assetId: 'gk-pose-16-atrapada-cuclillas',
+    groupId: 'goalkeepers',
+    label: 'Atrapada en cuclillas',
+    src: buildGoalkeeperSrc(
+      '16 atrapada cunclillas',
+      'GK01_BLOCAJE_ACHIQUE SENTADO_P02_R1.png',
+    ),
+    defaultWidth: 76,
+    defaultHeight: 104,
+    aiDescription:
+      'Portero en atrapada baja desde cuclillas, util para asegurar balones frontales.',
+  },
+  {
+    assetId: 'gk-pose-17-salto-una-pierna',
+    groupId: 'goalkeepers',
+    label: 'Salto una pierna',
+    src: buildGoalkeeperSrc(
+      '17 salto una pierna',
+      'GK01_SALTO_UNAPIERNA_P01_R1.png',
+    ),
+    defaultWidth: 76,
+    defaultHeight: 118,
+    aiDescription:
+      'Portero impulsandose con una sola pierna para trabajo de potencia y coordinacion.',
+  },
+  {
+    assetId: 'gk-pose-18-salto-dos-piernas',
+    groupId: 'goalkeepers',
+    label: 'Salto dos piernas',
+    src: buildGoalkeeperSrc(
+      '18 salto dos piernas',
+      'GK01_SALTO_DOSPIERNAS_P01_R1.png',
+    ),
+    defaultWidth: 82,
+    defaultHeight: 118,
+    aiDescription:
+      'Portero en salto con dos piernas, util para trabajo explosivo y blocaje alto.',
+  },
+  {
+    assetId: 'gk-pose-19-bolea-derecha',
+    groupId: 'goalkeepers',
+    label: 'Saque de bolea derecha',
+    src: buildGoalkeeperSrc(
+      '19 saque boleo derecha',
+      'GK01_DESPEJE_PATADA_P01_R1.png',
+    ),
+    defaultWidth: 82,
+    defaultHeight: 112,
+    aiDescription:
+      'Portero ejecutando un saque de bolea con perfil orientado a la derecha.',
+  },
+  {
+    assetId: 'gk-pose-20-corriendo',
+    groupId: 'goalkeepers',
+    label: 'Corriendo',
+    src: buildGoalkeeperSrc('20 corriendo', 'GK01_CORRIENDO_TROTAR_P01_R1.png'),
+    defaultWidth: 72,
+    defaultHeight: 112,
+    aiDescription:
+      'Portero corriendo o trotando, util para desplazamientos y recuperaciones de posicion.',
+  },
+  {
+    assetId: 'gk-pose-21-pateando',
+    groupId: 'goalkeepers',
+    label: 'Pateando',
+    src: buildGoalkeeperSrc('21 pateando', 'GK01_DESPEJE_PATADA_P02_R1.png'),
+    defaultWidth: 84,
+    defaultHeight: 112,
+    aiDescription:
+      'Portero pateando el balon, util para distribucion larga o despeje de juego.',
+  },
+  {
+    assetId: 'gk-pose-22-pierna-al-suelo',
+    groupId: 'goalkeepers',
+    label: 'Pierna al suelo',
+    src: buildGoalkeeperSrc(
+      '22 pierna al suelo',
+      'GK01_ACHIQUE_BARRERAAMPLIA_P02_R1.png',
+    ),
+    defaultWidth: 88,
+    defaultHeight: 108,
+    aiDescription:
+      'Portero en barrera amplia con una pierna al suelo, util para cierres y 1vs1.',
+  },
+  {
+    assetId: 'gk-pose-23-saque-mano',
+    groupId: 'goalkeepers',
+    label: 'Saque con la mano',
+    src: buildGoalkeeperSrc(
+      '23 saque con la mano',
+      'GK01_DESPEJE_CONMANO_P01_R1.png',
+    ),
+    defaultWidth: 82,
+    defaultHeight: 118,
+    aiDescription:
+      'Portero realizando un saque con la mano para iniciar salida rapida o distribucion corta.',
+  },
+  {
+    assetId: 'gk-pose-24-semivolea',
+    groupId: 'goalkeepers',
+    label: 'Semivolea',
+    src: buildGoalkeeperSrc(
+      '24 semivolea',
+      'GK01_DESPEJE_SEMIBOLEA_P01_R1.png',
+    ),
+    defaultWidth: 84,
+    defaultHeight: 112,
+    aiDescription:
+      'Portero en gesto de semivolea para distribucion media o despeje en transicion.',
+  },
+];
+
+export const CATALOG_ASSETS: CatalogAsset[] = [
+  ...CATALOG_GOALKEEPER_ASSETS,
+  ...LEGACY_CATALOG_ASSETS.filter((asset) => asset.groupId !== 'goalkeepers'),
+];
+
 export const CATALOG_ASSET_BY_ID = new Map<string, CatalogAsset>(
   CATALOG_ASSETS.map((a) => [a.assetId, a]),
 );

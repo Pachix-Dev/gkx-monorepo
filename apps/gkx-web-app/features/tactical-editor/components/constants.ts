@@ -11,7 +11,7 @@ const TOOL_PANELS: Array<{ id: ToolPanel; label: string }> = [
 const FONT_OPTIONS = ["Arial", "Verdana", "Trebuchet MS", "Georgia", "Impact"];
 
 const CATEGORY_HINTS: Record<string, string> = {
-  goalkeepers: "Porteros y acciones base",
+  goalkeepers: "Poses de portero con vistas intercambiables",
   balones: "Balones para referencias de disparo",
   conos: "Conos y marcadores",
   vallas: "Vallas para desplazamientos",

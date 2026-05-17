@@ -4,6 +4,7 @@ import type {
   ArrowHeadType,
   CircleElement,
   EditorElement,
+  ImageElement,
   LinePattern,
   RectElement,
   StrokeElement,
@@ -25,12 +26,42 @@ function isTextElement(element: EditorElement | null): element is TextElement {
   return element?.kind === "text";
 }
 
+function isAssetElement(element: EditorElement | null): element is ImageElement {
+  return element?.kind === "asset";
+}
+
 function isStrokeElement(element: EditorElement | null): element is StrokeElement {
   return element?.kind === "arrow" || element?.kind === "line" || element?.kind === "draw";
 }
 
 function isFillElement(element: EditorElement | null): element is RectElement | CircleElement {
   return element?.kind === "rect" || element?.kind === "circle";
+}
+
+function hasViewVariants(
+  element: EditorElement | null,
+): element is ImageElement & { variants: NonNullable<ImageElement["variants"]> } {
+  return isAssetElement(element) && Array.isArray(element.variants) && element.variants.length > 1;
+}
+
+function getCurrentVariantIndex(element: ImageElement) {
+  if (!Array.isArray(element.variants) || element.variants.length === 0) {
+    return 0;
+  }
+
+  if (
+    typeof element.variantIndex === "number" &&
+    element.variantIndex >= 0 &&
+    element.variantIndex < element.variants.length
+  ) {
+    return element.variantIndex;
+  }
+
+  const matchedIndex = element.variants.findIndex(
+    (variant) => variant.src === element.src,
+  );
+
+  return matchedIndex >= 0 ? matchedIndex : 0;
 }
 
 const KIND_LABEL: Record<string, string> = {
@@ -80,6 +111,10 @@ export function SelectedElementPanel({
 }: SelectedElementPanelProps) {
   if (!selectedElement) return null;
 
+  const currentVariantIndex = hasViewVariants(selectedElement)
+    ? getCurrentVariantIndex(selectedElement)
+    : 0;
+
   return (
     <div className="w-full rounded-2xl border border-border bg-background shadow-md">
       <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
@@ -88,6 +123,12 @@ export function SelectedElementPanel({
         <span className="shrink-0 rounded-lg bg-muted px-2.5 py-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {KIND_LABEL[selectedElement.kind] ?? selectedElement.kind}
         </span>
+
+        {isAssetElement(selectedElement) ? (
+          <span className="shrink-0 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground">
+            {selectedElement.label}
+          </span>
+        ) : null}
 
         <div className="h-5 w-px shrink-0 bg-border" />
 
@@ -159,6 +200,88 @@ export function SelectedElementPanel({
             </span>
           </label>
         )}
+
+        {hasViewVariants(selectedElement) ? (
+          <>
+            <div className="h-5 w-px shrink-0 bg-border" />
+            <div className="flex items-center gap-2">
+              <span className="shrink-0 text-xs text-muted-foreground">Vista</span>
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateElement(selectedElement.id, (cur) => {
+                    if (cur.kind !== "asset" || !cur.variants?.length) {
+                      return cur;
+                    }
+
+                    const total = cur.variants.length;
+                    const currentIndex =
+                      typeof cur.variantIndex === "number" &&
+                      cur.variantIndex >= 0 &&
+                      cur.variantIndex < total
+                        ? cur.variantIndex
+                        : Math.max(
+                            cur.variants.findIndex(
+                              (variant) => variant.src === cur.src,
+                            ),
+                            0,
+                          );
+                    const nextIndex = (currentIndex - 1 + total) % total;
+                    const nextVariant = cur.variants[nextIndex];
+
+                    return {
+                      ...cur,
+                      src: nextVariant.src,
+                      variantIndex: nextIndex,
+                    };
+                  });
+                }}
+                className="rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground transition hover:bg-muted"
+                title="Vista anterior"
+              >
+                Prev
+              </button>
+              <span className="min-w-20 text-center text-xs tabular-nums text-muted-foreground">
+                {currentVariantIndex + 1}/{selectedElement.variants.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateElement(selectedElement.id, (cur) => {
+                    if (cur.kind !== "asset" || !cur.variants?.length) {
+                      return cur;
+                    }
+
+                    const total = cur.variants.length;
+                    const currentIndex =
+                      typeof cur.variantIndex === "number" &&
+                      cur.variantIndex >= 0 &&
+                      cur.variantIndex < total
+                        ? cur.variantIndex
+                        : Math.max(
+                            cur.variants.findIndex(
+                              (variant) => variant.src === cur.src,
+                            ),
+                            0,
+                          );
+                    const nextIndex = (currentIndex + 1) % total;
+                    const nextVariant = cur.variants[nextIndex];
+
+                    return {
+                      ...cur,
+                      src: nextVariant.src,
+                      variantIndex: nextIndex,
+                    };
+                  });
+                }}
+                className="rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground transition hover:bg-muted"
+                title="Vista siguiente"
+              >
+                Next
+              </button>
+            </div>
+          </>
+        ) : null}
 
         {/* Text-specific controls */}
         {isTextElement(selectedElement) && (
